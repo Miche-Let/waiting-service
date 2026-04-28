@@ -115,15 +115,15 @@ class WaitingTest {
     // ── isExpired() ─────────────────────────────────────────────
 
     @Test
-    @DisplayName("enteredAt 이 10분을 초과하면 isExpired() 는 true 를 반환한다")
-    void isExpired_true_after_10_minutes() {
+    @DisplayName("ACTIVE 전환 후 10분 초과 시 isExpired() 는 true 를 반환한다")
+    void isExpired_true_after_10minutes_from_activated() {
         Waiting waiting = Waiting.restore(
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
-                WaitingStatus.WAITING,
-                LocalDateTime.now().minusMinutes(11)  // 11분 전 입장
+                WaitingStatus.ACTIVE,
+                LocalDateTime.now(),
+                LocalDateTime.now().minusMinutes(11)  // activatedAt 11분 전
         );
-
         assertThat(waiting.isExpired()).isTrue();
     }
 
@@ -134,6 +134,7 @@ class WaitingTest {
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
                 WaitingStatus.WAITING,
+                LocalDateTime.now(),
                 LocalDateTime.now().minusMinutes(9)  // 9분 전 입장
         );
 
@@ -149,6 +150,14 @@ class WaitingTest {
         waiting.activate();
 
         assertThat(waiting.isActive()).isTrue();
+    }
+
+    @Test
+    @DisplayName("WAITING 상태는 시간이 지나도 isExpired() 는 false 를 반환한다")
+    void isExpired_false_when_waiting() {
+        Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
+
+        assertThat(waiting.isExpired()).isFalse();
     }
 
     @Test

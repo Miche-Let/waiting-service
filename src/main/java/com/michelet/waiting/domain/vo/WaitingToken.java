@@ -17,6 +17,4 @@ public record WaitingToken (String value){
     public static WaitingToken of(String value){
         return new WaitingToken(value);
     }
-
-
 }
