@@ -153,9 +153,14 @@ class WaitingTest {
     }
 
     @Test
-    @DisplayName("WAITING 상태는 시간이 지나도 isExpired() 는 false 를 반환한다")
-    void isExpired_false_when_waiting() {
-        Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
+    @DisplayName("WAITING 상태는 enteredAt 이 오래되어도 isExpired() 는 false 를 반환한다")
+    void  isExpired_false_when_waiting_even_if_entered_at_old() {
+        Waiting waiting = Waiting.restore(
+                UUID.randomUUID(), USER_ID, RESTAURANT_ID,
+                WaitingToken.generate(),
+                WaitingStatus.WAITING,
+                LocalDateTime.now().minusHours(1),
+                null);
 
         assertThat(waiting.isExpired()).isFalse();
     }
