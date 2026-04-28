@@ -133,9 +133,9 @@ class WaitingTest {
         Waiting waiting = Waiting.restore(
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
-                WaitingStatus.WAITING,
+                WaitingStatus.ACTIVE,
                 LocalDateTime.now(),
-                LocalDateTime.now().minusMinutes(9)  // 9분 전 입장
+                LocalDateTime.now().minusMinutes(9)  // activatedAt 9분 전
         );
 
         assertThat(waiting.isExpired()).isFalse();
