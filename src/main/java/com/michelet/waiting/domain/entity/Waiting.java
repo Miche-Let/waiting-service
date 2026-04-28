@@ -7,6 +7,7 @@ import com.michelet.waiting.domain.vo.WaitingToken;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @Getter
@@ -20,12 +21,12 @@ public class Waiting {
 
     private Waiting(UUID id, UUID userId, UUID restaurantId, WaitingToken token,
                     WaitingStatus status, LocalDateTime enteredAt){
-        this.id = id;
-        this.userId = userId;
-        this.restaurantId = restaurantId;
-        this.token = token;
-        this.status = status;
-        this.enteredAt = enteredAt;
+        this.id           = Objects.requireNonNull(id,           "id must not be null");
+        this.userId       = Objects.requireNonNull(userId,       "userId must not be null");
+        this.restaurantId = Objects.requireNonNull(restaurantId, "restaurantId must not be null");
+        this.token        = Objects.requireNonNull(token,        "token must not be null");
+        this.status       = Objects.requireNonNull(status,       "status must not be null");
+        this.enteredAt    = Objects.requireNonNull(enteredAt,    "enteredAt must not be null");
     }
 
     public static Waiting create(UUID userId, UUID restaurantId){
