@@ -16,9 +16,14 @@ public class AuditorConfig {
         return () -> {
             // 예시: SecurityContext / MDC / 요청 헤더 등에서 userId 추출
             String userId = MDC.get("userId");
-            return userId != null
-                    ? Optional.of(UUID.fromString(userId))
-                    : Optional.empty();
+            if(userId == null || userId.isBlank()){
+                return Optional.empty();
+            }
+            try{
+                return Optional.of(UUID.fromString(userId));
+            }catch (IllegalArgumentException ex){
+                return Optional.empty();
+            }
         };
     }
 }
