@@ -116,7 +116,7 @@ class WaitingTest {
 
     @Test
     @DisplayName("enteredAt 이 10분을 초과하면 isExpired() 는 true 를 반환한다")
-    void isExpired_true_after_30_minutes() {
+    void isExpired_true_after_10_minutes() {
         Waiting waiting = Waiting.restore(
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
@@ -129,7 +129,7 @@ class WaitingTest {
 
     @Test
     @DisplayName("enteredAt 이 10분 이내이면 isExpired() 는 false 를 반환한다")
-    void isExpired_false_within_30_minutes() {
+    void isExpired_false_within_10_minutes() {
         Waiting waiting = Waiting.restore(
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
