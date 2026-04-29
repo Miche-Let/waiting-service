@@ -35,15 +35,17 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
         return SEQ_PREFIX + restaurantId;
     }
 
+    private void validateToken(String token){
+        if(token == null || token.isBlank())
+            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
+    }
+
     // 대기열 등록
     // INCR로 시퀀스 생성 후 score로 사용
     @Override
     public void add(UUID restaurantId, String token) {
 
-        Objects.requireNonNull(token, "token must not be null");
-        if (token.isBlank())
-            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
-
+        validateToken(token);
         String key = buildKey(restaurantId);
 
         Double existingScore = redisTemplate.opsForZSet().score(key, token);
@@ -60,6 +62,7 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
     // ZRANK 0 based 반환이라 +1 해서 1 based로 변환
     @Override
     public Long getPosition(UUID restaurantId, String token) {
+        validateToken(token);
         String key = buildKey(restaurantId);
         Long rank = redisTemplate.opsForZSet().rank(key,token);
         return rank != null ? rank + 1 : null;
@@ -93,6 +96,7 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
 
     @Override
     public void remove(UUID restaurantId, String token) {
+        validateToken(token);
         redisTemplate.opsForZSet().remove(buildKey(restaurantId), token);
     }
 }
