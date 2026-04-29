@@ -17,6 +17,7 @@ public class RedisWaitingActivateionAdapter implements WaitingActivationPort {
 
     private final RedisTemplate<String,String> redisTemplate;
     private static final String PREFIX = "waiting:queue:";
+    private static final String SEQ_PREFIX = "waiting:seq:";
 
     // key craete - "waiting:queue:{restaurantId}"
     // 식당별 독립적인 대기열 관리
@@ -25,13 +26,21 @@ public class RedisWaitingActivateionAdapter implements WaitingActivationPort {
         return PREFIX + restaurantId;
     }
 
+    // seqKey create - "waiting:seq:{restaurantId}"
+    // 식당별 시퀀스 관리
+    private String buildSeqKey(UUID restaurantId){
+        Objects.requireNonNull(restaurantId, "restaurantId must not be null");
+        return SEQ_PREFIX + restaurantId;
+    }
+
     // 대기열 등록
-    // score = 현재 시각 -> 먼저 들어올 수록 낮은 rank
+    // INCR로 시퀀스 생성 후 score로 사용
     @Override
     public void add(UUID restaurantId, String token) {
         String key = buildKey(restaurantId);
+        Long sequence = redisTemplate.opsForValue().increment(buildSeqKey(restaurantId));
         redisTemplate.opsForZSet()
-                .add(key, token, System.currentTimeMillis());
+                .add(key, token, sequence);
     }
 
     // 순번 조회
@@ -47,7 +56,8 @@ public class RedisWaitingActivateionAdapter implements WaitingActivationPort {
     // Redis ZCARD
     @Override
     public Long countWaiting(UUID restaurantId) {
-        Long count = redisTemplate.opsForZSet().size(buildKey(restaurantId));
+        String key = buildKey(restaurantId);
+        Long count = redisTemplate.opsForZSet().size(key);
         return count != null ? count : 0L;
     }
 
@@ -55,10 +65,12 @@ public class RedisWaitingActivateionAdapter implements WaitingActivationPort {
     // ZPOPMIN -> score 낮은 순 N개 추출
     @Override
     public List<String> popNextTokens(UUID restaurantId, int count) {
+        String key = buildKey(restaurantId);
+        if(count <= 0) return List.of();
         Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet()
-                .popMin(buildKey(restaurantId), count);
+                .popMin(key, count);
 
-        if(tuples == null) return List.of();
+        if (tuples == null || tuples.isEmpty()) return List.of();
 
         return tuples.stream()
                 .map(ZSetOperations.TypedTuple::getValue)
