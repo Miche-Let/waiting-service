@@ -1,6 +1,8 @@
 package com.michelet.waiting.infrastructure.redis;
 
 import com.michelet.waiting.application.port.WaitingActivationPort;
+import com.michelet.waiting.domain.exception.WaitingErrorCode;
+import com.michelet.waiting.domain.exception.WaitingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -37,8 +39,16 @@ public class RedisWaitingActivateionAdapter implements WaitingActivationPort {
     // INCR로 시퀀스 생성 후 score로 사용
     @Override
     public void add(UUID restaurantId, String token) {
+
+        Objects.requireNonNull(token, "token must not be null");
+        if (token.isBlank())
+            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
+
         String key = buildKey(restaurantId);
         Long sequence = redisTemplate.opsForValue().increment(buildSeqKey(restaurantId));
+
+        if (sequence == null)
+            throw new WaitingException(WaitingErrorCode.QUEUE_SEQUENCE_FAILED);
         redisTemplate.opsForZSet()
                 .add(key, token, sequence);
     }
