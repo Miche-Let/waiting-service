@@ -10,3 +10,9 @@ eureka:
     enabled: false
 #    service-url:
 #      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+
+waiting:
+  activate-ratio: 0.1
+  scheduler-delay-ms: 10000
+  expire-minutes: 10
