@@ -45,6 +45,9 @@ public class Waiting {
     public static Waiting restore(UUID id, UUID userId, UUID restaurantId,
                                   WaitingToken token, WaitingStatus status,
                                   LocalDateTime enteredAt, LocalDateTime activatedAt){
+        if(status == WaitingStatus.ACTIVE && activatedAt == null){
+            throw new WaitingException(WaitingErrorCode.INVALID_ACTIVATED_AT);
+        }
         return new Waiting(id, userId, restaurantId, token, status, enteredAt, activatedAt);
     }
 
