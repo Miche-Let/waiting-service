@@ -118,4 +118,13 @@ public class WaitingService {
             waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
         });
     }
+
+    // kafka consumer 수신 처리
+    public void handleActivated(WaitingActivatedEvent event){
+        waitingRepository.findById(event.waitingId())
+                .ifPresent(waiting -> {
+                    waiting.activate();
+                    waitingRepository.save(waiting);
+                });
+    }
 }
