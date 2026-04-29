@@ -103,7 +103,7 @@ class WaitingTest {
 
     @Test
     @DisplayName("WAITING 상태에서 expire() 호출 시 WaitingException 이 발생한다")
-    void expire_fail_when_active() {
+    void expire_fail_when_waiting() {
         Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
         assertThatThrownBy(waiting::expire)
                 .isInstanceOf(WaitingException.class)
