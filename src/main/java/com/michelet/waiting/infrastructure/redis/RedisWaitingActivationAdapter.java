@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class RedisWaitingActivateionAdapter implements WaitingActivationPort {
+public class RedisWaitingActivationAdapter implements WaitingActivationPort {
 
     private final RedisTemplate<String,String> redisTemplate;
     private static final String PREFIX = "waiting:queue:";
