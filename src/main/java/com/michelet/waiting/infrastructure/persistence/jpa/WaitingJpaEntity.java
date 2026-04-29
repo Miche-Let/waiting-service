@@ -20,7 +20,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class WaitingJpaEnitty {
+public class WaitingJpaEntity {
 
     @Id
     @Column(name ="waiting_id", columnDefinition = "uuid")
@@ -46,8 +46,8 @@ public class WaitingJpaEnitty {
     private LocalDateTime activatedAt;
 
     // Domain -> JPA
-    public static WaitingJpaEnitty from(Waiting w){
-        WaitingJpaEnitty e = new WaitingJpaEnitty();
+    public static WaitingJpaEntity from(Waiting w){
+        WaitingJpaEntity e = new WaitingJpaEntity();
         e.id = w.getId();
         e.userId = w.getUserId();
         e.restaurantId = w.getRestaurantId();

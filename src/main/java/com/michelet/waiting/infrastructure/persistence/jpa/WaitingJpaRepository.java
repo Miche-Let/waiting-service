@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface WaitingJpaRepository extends JpaRepository<WaitingJpaEnitty, UUID> {
+public interface WaitingJpaRepository extends JpaRepository<WaitingJpaEntity, UUID> {
 
-    Optional<WaitingJpaEnitty> findByToken(String token);
+    Optional<WaitingJpaEntity> findByToken(String token);
 
-    List<WaitingJpaEnitty> findByRestaurantIdAndStatus(
+    List<WaitingJpaEntity> findByRestaurantIdAndStatus(
             UUID restaurantId, WaitingStatus status
     );
 

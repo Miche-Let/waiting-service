@@ -2,7 +2,7 @@ package com.michelet.waiting.infrastructure.persistence.querydsl;
 
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.infrastructure.persistence.jpa.QWaitingJpaEnitty;
-import com.michelet.waiting.infrastructure.persistence.jpa.WaitingJpaEnitty;
+import com.michelet.waiting.infrastructure.persistence.jpa.WaitingJpaEntity;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -17,7 +17,7 @@ public class WaitingQueryRepository {
     private final QWaitingJpaEnitty w = QWaitingJpaEnitty.waitingJpaEnitty;
 
     // ACTIVE 상태 중 activatedAt 기준 만료 대상 조회
-    public List<WaitingJpaEnitty> findExpiredActives(LocalDateTime expiredBefore){
+    public List<WaitingJpaEntity> findExpiredActives(LocalDateTime expiredBefore){
         return queryFactory
                 .selectFrom(w)
                 .where(

@@ -21,26 +21,26 @@ public class WaitingRepositoryImpl implements WaitingRepository {
 
     @Override
     public Waiting save(Waiting waiting) {
-        return jpa.save(WaitingJpaEnitty.from(waiting)).toDomain();
+        return jpa.save(WaitingJpaEntity.from(waiting)).toDomain();
     }
 
     @Override
     public Optional<Waiting> findByToken(String token) {
         return jpa.findByToken(token)
-                .map(WaitingJpaEnitty::toDomain);
+                .map(WaitingJpaEntity::toDomain);
     }
 
     @Override
     public Optional<Waiting> findById(UUID id) {
         return jpa.findById(id)
-                .map(WaitingJpaEnitty::toDomain);
+                .map(WaitingJpaEntity::toDomain);
     }
 
     @Override
     public List<Waiting> findWaitingByRestaurantId(UUID restaurantId) {
         return jpa.findByRestaurantIdAndStatus(restaurantId, WaitingStatus.WAITING)
                 .stream()
-                .map(WaitingJpaEnitty::toDomain)
+                .map(WaitingJpaEntity::toDomain)
                 .toList();
     }
 
@@ -48,7 +48,7 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     public List<Waiting> findExpiredActives(LocalDateTime expiredBefore) {
         return queryRepository.findExpiredActives(expiredBefore)
                 .stream()
-                .map(WaitingJpaEnitty::toDomain)
+                .map(WaitingJpaEntity::toDomain)
                 .toList();
     }
 
