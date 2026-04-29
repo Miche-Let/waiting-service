@@ -23,13 +23,13 @@ import java.util.UUID;
 public class WaitingJpaEnitty {
 
     @Id
-    @Column(name ="waiting_id", columnDefinition = "BINARY(16)")
+    @Column(name ="waiting_id", columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
     private UUID userId;
 
-    @Column(name = "restaurant_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "restaurant_id", nullable = false, columnDefinition = "uuid")
     private UUID restaurantId;
 
     @Enumerated(EnumType.STRING)
