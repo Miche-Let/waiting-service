@@ -92,21 +92,19 @@ class WaitingTest {
     // ── expire() ────────────────────────────────────────────────
 
     @Test
-    @DisplayName("WAITING 상태에서 expire() 호출 시 EXPIRED 로 전환된다")
+    @DisplayName("ACTIVE 상태에서 expire() 호출 시 EXPIRED 로 전환된다")
     void expire_success() {
         Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
-
+        waiting.activate();
         waiting.expire();
 
         assertThat(waiting.getStatus()).isEqualTo(WaitingStatus.EXPIRED);
     }
 
     @Test
-    @DisplayName("ACTIVE 상태에서 expire() 호출 시 WaitingException 이 발생한다")
-    void expire_fail_when_active() {
+    @DisplayName("WAITING 상태에서 expire() 호출 시 WaitingException 이 발생한다")
+    void expire_fail_when_waiting() {
         Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
-        waiting.activate();
-
         assertThatThrownBy(waiting::expire)
                 .isInstanceOf(WaitingException.class)
                 .hasMessage(WaitingErrorCode.INVALID_STATE.getMessage());

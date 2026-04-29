@@ -2,15 +2,25 @@ spring:
   application:
     name: waiting-service
 
-server:
-  port: 19200
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:michelet_db}
+    username: ${POSTGRES_USER:admin}
+    password: ${POSTGRES_PASSWORD:admin}
+    driver-class-name: org.postgresql.Driver
 
-eureka:
-  client:
-    enabled: false
-#    service-url:
-#      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 waiting:
   activate-ratio: 0.1
