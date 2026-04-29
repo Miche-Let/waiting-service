@@ -24,5 +24,5 @@ spring:
 
 waiting:
   activate-ratio: 0.1
-  scheduler-delay-ms: 5000
+  scheduler-delay-ms: 10000
   expire-minutes: 10
