@@ -45,8 +45,11 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
             throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
 
         String key = buildKey(restaurantId);
-        Long sequence = redisTemplate.opsForValue().increment(buildSeqKey(restaurantId));
 
+        Double existingScore = redisTemplate.opsForZSet().score(key, token);
+        if (existingScore != null) return;
+
+        Long sequence = redisTemplate.opsForValue().increment(buildSeqKey(restaurantId));
         if (sequence == null)
             throw new WaitingException(WaitingErrorCode.QUEUE_SEQUENCE_FAILED);
         redisTemplate.opsForZSet()
