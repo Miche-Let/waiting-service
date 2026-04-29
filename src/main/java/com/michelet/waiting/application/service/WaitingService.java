@@ -45,13 +45,16 @@ public class WaitingService {
 
         Waiting waiting = Waiting.create(command.userId(), command.restaurantId());
 
+        // DB 저장
+        Waiting saved = waitingRepository.save(waiting);
+
         // redis 순번 등록
-        Long position = waitingActivationPort.addIfAbsentAndGetPosition(
+        waitingActivationPort.add(command.restaurantId(), saved.getToken().value());
+        // redis 순번 조회
+        Long position = waitingActivationPort.getPosition(
                 command.restaurantId(), waiting.getToken().value()
         );
 
-        // DB 저장
-        Waiting saved = waitingRepository.save(waiting);
 
         return WaitingResult.of(saved, position);
 
@@ -64,7 +67,7 @@ public class WaitingService {
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
 
         if(waiting.getStatus() == WaitingStatus.WAITING){
-            Long position = waitingActivationPort.addIfAbsentAndGetPosition(
+            Long position = waitingActivationPort.getPosition(
                     waiting.getRestaurantId(), query.token()
             );
             return WaitingResult.of(waiting, position);
@@ -93,6 +96,8 @@ public class WaitingService {
 
         List<String> tokens = waitingActivationPort.popNextTokens(restaurantId, batchSize);
 
+        // TODO: [Post-MVP] dequeue(popNextTokens) 와 이벤트 발행(publish)을 트랜잭션 커밋 이후로 분리
+        //       Outbox 패턴 또는 TransactionSynchronizationManager.registerSynchronization 활용 권장
         tokens.forEach(token ->
                 waitingRepository.findByToken(token).ifPresent(waiting -> {
                     waiting.activate();
