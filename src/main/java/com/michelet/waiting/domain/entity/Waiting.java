@@ -65,7 +65,7 @@ public class Waiting {
     }
 
     public void expire() {
-        if(status != WaitingStatus.WAITING)
+        if(status != WaitingStatus.ACTIVE)
             throw new WaitingException(WaitingErrorCode.INVALID_STATE);
         this.status = WaitingStatus.EXPIRED;
     }
