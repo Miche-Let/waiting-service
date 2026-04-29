@@ -3,7 +3,7 @@ spring:
     name: waiting-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:michelet_db}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:michelet_db}
     username: ${POSTGRES_USER:admin}
     password: ${POSTGRES_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
