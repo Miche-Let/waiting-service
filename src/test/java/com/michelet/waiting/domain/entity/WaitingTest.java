@@ -172,4 +172,18 @@ class WaitingTest {
 
         assertThat(waiting.isActive()).isFalse();
     }
+
+    @Test
+    @DisplayName("ACTIVE 상태로 복원 시 activatedAt 이 null 이면 WaitingException 이 발생한다")
+    void restore_fail_when_active_and_activatedAt_is_null() {
+        assertThatThrownBy(() -> Waiting.restore(
+                UUID.randomUUID(), USER_ID, RESTAURANT_ID,
+                WaitingToken.generate(),
+                WaitingStatus.ACTIVE,
+                LocalDateTime.now(),
+                null  // activatedAt null
+        ))
+                .isInstanceOf(WaitingException.class)
+                .hasMessage(WaitingErrorCode.INVALID_ACTIVATED_AT.getMessage());
+    }
 }
