@@ -26,7 +26,7 @@ public class WaitingRepositoryImpl implements WaitingRepository {
 
     @Override
     public Optional<Waiting> findByToken(String token) {
-        return jpa.findByToken(token)
+        return jpa.findByTokenAndDeletedAtIsNull(token)
                 .map(WaitingJpaEntity::toDomain);
     }
 
@@ -38,7 +38,7 @@ public class WaitingRepositoryImpl implements WaitingRepository {
 
     @Override
     public List<Waiting> findWaitingByRestaurantId(UUID restaurantId) {
-        return jpa.findByRestaurantIdAndStatus(restaurantId, WaitingStatus.WAITING)
+        return jpa.findByRestaurantIdAndStatusAndDeletedAtIsNull(restaurantId, WaitingStatus.WAITING)
                 .stream()
                 .map(WaitingJpaEntity::toDomain)
                 .toList();
@@ -53,15 +53,18 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     }
 
     @Override
-    public void softDelete(UUID waitingId, UUID deleteBy){
-        jpa.findById(waitingId).ifPresent(entity ->{
-            entity.softDelete(deleteBy);
-            jpa.save(entity);
-        });
+    public void softDelete(UUID waitingId, UUID deletedBy) {
+        jpa.findById(waitingId)
+                .filter(e -> !e.isDeleted())  // 이미 삭제된 경우 제외
+                .ifPresent(entity -> {
+                    entity.softDelete(deletedBy);
+                    jpa.save(entity);
+                });
     }
 
     @Override
     public void deleteExpiredBefore(LocalDateTime threshold) {
         jpa.deleteByStatusAndEnteredAtBefore(WaitingStatus.EXPIRED, threshold);
     }
+
 }

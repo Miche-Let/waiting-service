@@ -24,7 +24,8 @@ public class WaitingQueryRepository {
                 .selectFrom(w)
                 .where(
                         w.status.eq(WaitingStatus.ACTIVE),
-                        w.activatedAt.before(expiredBefore)
+                        w.activatedAt.before(expiredBefore),
+                        w._super.deletedAt.isNull()
                 )
                 .fetch();
     }

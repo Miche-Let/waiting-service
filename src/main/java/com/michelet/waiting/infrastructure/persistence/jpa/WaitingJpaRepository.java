@@ -10,9 +10,9 @@ import java.util.UUID;
 
 public interface WaitingJpaRepository extends JpaRepository<WaitingJpaEntity, UUID> {
 
-    Optional<WaitingJpaEntity> findByToken(String token);
+    Optional<WaitingJpaEntity> findByTokenAndDeletedAtIsNull (String token);
 
-    List<WaitingJpaEntity> findByRestaurantIdAndStatus(
+    List<WaitingJpaEntity> findByRestaurantIdAndStatusAndDeletedAtIsNull(
             UUID restaurantId, WaitingStatus status
     );
 
