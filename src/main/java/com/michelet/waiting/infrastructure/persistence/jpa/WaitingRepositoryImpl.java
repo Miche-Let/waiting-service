@@ -66,5 +66,4 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     public void deleteExpiredBefore(LocalDateTime threshold) {
         jpa.deleteByStatusAndEnteredAtBefore(WaitingStatus.EXPIRED, threshold);
     }
-
 }
