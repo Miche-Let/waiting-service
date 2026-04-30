@@ -37,7 +37,7 @@ public class WaitingApiController {
     }
 
     // 대기 순번 조회
-    @GetMapping("/{token}")
+    @GetMapping("/status")
     public ResponseEntity<ApiResponse<WaitingStatusResponse>> getStatus(
             @RequestParam String token
     ){
