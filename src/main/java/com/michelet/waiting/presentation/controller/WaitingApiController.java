@@ -53,6 +53,7 @@ public class WaitingApiController {
 
     }
 
+    // 대기열 취소
     @DeleteMapping("/{waitingId}")
     public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable UUID waitingId
