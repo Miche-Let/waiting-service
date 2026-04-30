@@ -73,7 +73,7 @@ public class WaitingService {
     }
 
     // 취소
-    public void cancelWaiting(UUID waitingId){
+    public void cancelWaiting(UUID waitingId, UUID deletedBy){
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
 
