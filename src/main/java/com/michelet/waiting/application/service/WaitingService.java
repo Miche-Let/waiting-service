@@ -79,6 +79,7 @@ public class WaitingService {
 
         waiting.cancel();
         waitingRepository.save(waiting);
+        waitingRepository.softDelete(waitingId, deletedBy);
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
     }
 

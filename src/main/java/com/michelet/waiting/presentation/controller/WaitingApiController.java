@@ -56,9 +56,10 @@ public class WaitingApiController {
     // 대기열 취소
     @DeleteMapping("/{waitingId}")
     public ResponseEntity<ApiResponse<Void>> cancel(
-            @PathVariable UUID waitingId
+            @PathVariable UUID waitingId,
+            @RequestHeader("X-User-Id") UUID userId
     ){
-        waitingService.cancelWaiting(waitingId);
+        waitingService.cancelWaiting(waitingId, userId);
         return ResponseEntity
                 .status(WaitingSuccessCode.CANCEL_SUCCESS.getHttpStatus())
                 .body(ApiResponse.ok(WaitingSuccessCode.CANCEL_SUCCESS, null));

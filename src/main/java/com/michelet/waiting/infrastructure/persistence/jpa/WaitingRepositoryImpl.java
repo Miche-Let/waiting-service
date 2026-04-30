@@ -53,6 +53,14 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     }
 
     @Override
+    public void softDelete(UUID waitingId, UUID deleteBy){
+        jpa.findById(waitingId).ifPresent(entity ->{
+            entity.softDelete(deleteBy);
+            jpa.save(entity);
+        });
+    }
+
+    @Override
     public void deleteExpiredBefore(LocalDateTime threshold) {
         jpa.deleteByStatusAndEnteredAtBefore(WaitingStatus.EXPIRED, threshold);
     }
