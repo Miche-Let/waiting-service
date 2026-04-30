@@ -1,0 +1,24 @@
+### 환경변수 설정
+# @name base
+@baseUrl = http://localhost:8080
+#@waitingId = 여기에 waitingId 입력
+#@token = 여기에 토큰 입력
+@waitingId = 76d49deb-337e-490d-b460-7a13471b48cf
+@token = 51ae9762-310a-45a7-8052-6e32364a8c05
+
+### 1. 대기 등록
+POST {{baseUrl}}/api/v1/waitings
+Content-Type: application/json
+
+{
+  "userId": "123e4567-e89b-22d3-a456-426614174000",
+  "restaurantId": "456e7890-e89b-12d3-a456-426614174000"
+}
+
+### 대기 등록 응답에서 token, waitingId 복사해서 위 변수에 입력
+
+### 2. 대기 순번 조회
+GET {{baseUrl}}/api/v1/waitings/status?token={{token}}
+
+### 3. 대기 취소
+DELETE {{baseUrl}}/api/v1/waitings/{{waitingId}}

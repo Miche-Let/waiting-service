@@ -4,10 +4,8 @@ import com.michelet.waiting.application.dto.EnterWaitingCommand;
 import com.michelet.waiting.application.dto.GetWaitingStatusQuery;
 import com.michelet.waiting.application.dto.WaitingResult;
 import com.michelet.waiting.application.port.WaitingActivationPort;
-import com.michelet.waiting.application.port.WaitingEventProducer;
 import com.michelet.waiting.domain.entity.Waiting;
 import com.michelet.waiting.domain.enums.WaitingStatus;
-import com.michelet.waiting.domain.event.WaitingActivatedEvent;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
 import com.michelet.waiting.domain.repository.WaitingRepository;
@@ -26,7 +24,6 @@ import java.util.UUID;
 public class WaitingService {
     private final WaitingRepository waitingRepository;
     private final WaitingActivationPort waitingActivationPort;
-    private final WaitingEventProducer waitingEventProducer;
 
     @Value("${waiting.activate-ratio:0.1}")
     private double activateRatio;
@@ -96,15 +93,11 @@ public class WaitingService {
 
         List<String> tokens = waitingActivationPort.popNextTokens(restaurantId, batchSize);
 
-        // TODO: [Post-MVP] dequeue(popNextTokens) 와 이벤트 발행(publish)을 트랜잭션 커밋 이후로 분리
-        //       Outbox 패턴 또는 TransactionSynchronizationManager.registerSynchronization 활용 권장
+
         tokens.forEach(token ->
                 waitingRepository.findByToken(token).ifPresent(waiting -> {
                     waiting.activate();
-                    Waiting saved = waitingRepository.save(waiting);
-                    waitingEventProducer.publish(new WaitingActivatedEvent(
-                            saved.getId(), saved.getUserId(), saved.getRestaurantId()
-                    ));
+                    waitingRepository.save(waiting);
                 }));
     }
 
