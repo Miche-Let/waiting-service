@@ -25,9 +25,9 @@ public class WaitingInternalController {
     ){
         WaitingResult result = waitingService.verifyToken(token);
         return ResponseEntity
-                .status(WaitingSuccessCode.GET_SUCCESS.getHttpStatus())
+                .status(WaitingSuccessCode.VERIFY_SUCCESS.getHttpStatus())
                 .body(ApiResponse.ok(
-                        WaitingSuccessCode.GET_SUCCESS,
+                        WaitingSuccessCode.VERIFY_SUCCESS,
                         WaitingStatusResponse.from(result)
                 ));
 
