@@ -32,7 +32,7 @@ public class WaitingRepositoryImpl implements WaitingRepository {
 
     @Override
     public Optional<Waiting> findById(UUID id) {
-        return jpa.findById(id)
+        return jpa.findByIdAndDeletedAtIsNull(id)
                 .map(WaitingJpaEntity::toDomain);
     }
 
@@ -54,8 +54,7 @@ public class WaitingRepositoryImpl implements WaitingRepository {
 
     @Override
     public void softDelete(UUID waitingId, UUID deletedBy) {
-        jpa.findById(waitingId)
-                .filter(e -> !e.isDeleted())  // 이미 삭제된 경우 제외
+        jpa.findByIdAndDeletedAtIsNull(waitingId)
                 .ifPresent(entity -> {
                     entity.softDelete(deletedBy);
                     jpa.save(entity);

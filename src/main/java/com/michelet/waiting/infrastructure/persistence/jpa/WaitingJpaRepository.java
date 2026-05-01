@@ -19,4 +19,6 @@ public interface WaitingJpaRepository extends JpaRepository<WaitingJpaEntity, UU
     void deleteByStatusAndEnteredAtBefore(
             WaitingStatus status, LocalDateTime threshold
     );
+
+    Optional<WaitingJpaEntity> findByIdAndDeletedAtIsNull(UUID id);
 }
