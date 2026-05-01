@@ -1,5 +1,6 @@
 package com.michelet.waiting.infrastructure.persistence.jpa;
 
+import com.michelet.common.entity.BaseEntity;
 import com.michelet.waiting.domain.entity.Waiting;
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.vo.WaitingToken;
@@ -20,7 +21,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class WaitingJpaEntity {
+public class WaitingJpaEntity extends BaseEntity {
 
     @Id
     @Column(name ="waiting_id", columnDefinition = "uuid")

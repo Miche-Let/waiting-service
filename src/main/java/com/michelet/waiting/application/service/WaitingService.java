@@ -73,12 +73,36 @@ public class WaitingService {
     }
 
     // 취소
-    public void cancelWaiting(UUID waitingId){
+    public void cancelWaiting(UUID waitingId, UUID deletedBy){
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
 
         waiting.cancel();
         waitingRepository.save(waiting);
+        waitingRepository.softDelete(waitingId, deletedBy);
+        waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
+    }
+
+    // ACTIVE 상태인지 검증 - 예약 서비스가 예약 전 호출
+    @Transactional(readOnly = true)
+    public WaitingResult verifyToken(String token){
+        Waiting waiting = waitingRepository.findByToken(token)
+                .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
+        if(!waiting.isActive())
+            throw new WaitingException(WaitingErrorCode.INVALID_STATE);
+
+        return WaitingResult.of(waiting);
+    }
+
+    // 토큰 삭제 - 예약 서비스가 예약 완료 후 호출
+    public void completeWaiting(UUID waitingId, UUID deletedBy){
+        Waiting waiting = waitingRepository.findById(waitingId)
+                .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
+        if(!waiting.isActive())
+            throw new WaitingException(WaitingErrorCode.INVALID_STATE);
+
+        waitingRepository.softDelete(waitingId, deletedBy);
+
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
     }
 
