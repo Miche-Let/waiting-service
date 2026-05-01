@@ -4,8 +4,8 @@
 @userId = 123e4567-e89b-12d3-a456-426614174000
 
 ### 대기 등록 후 아래 변수에 응답값 입력
-@waitingId = 여기에 waitingId 입력
-@token = 여기에 토큰 입력
+@waitingId = <waitingId>
+@token = <token>
 
 ### 1. 입장 가능 여부 검증
 # ACTIVE 상태일 때만 성공 응답
