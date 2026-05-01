@@ -77,6 +77,10 @@ public class WaitingService {
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
 
+        if(!waiting.getUserId().equals(deletedBy)){
+            throw new WaitingException(WaitingErrorCode.UNAUTHORIZED);
+        }
+
         waiting.cancel();
         waitingRepository.save(waiting);
         waitingRepository.softDelete(waitingId, deletedBy);
