@@ -13,11 +13,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 
-@Table(
-        name = "p_waiting_queue",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"user_id","restaurant_id"}
-        ))
+@Table(name = "p_waiting_queue")
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
