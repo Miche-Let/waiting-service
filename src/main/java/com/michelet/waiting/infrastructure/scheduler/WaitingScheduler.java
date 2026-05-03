@@ -22,7 +22,7 @@ public class WaitingScheduler {
     // 모든 식당의 대기열을 순회하며 10% 인원 활성화
     @Scheduled(fixedDelayString = "${waiting.activate-scheduler-delay-ms:10000}")
     public void activateNextBatch() {
-        log.info("[스케줄러] activateNextBatch 실행");
+        log.info("[Scheduler] ActivateNextBatch Run");
 
         // WAITING 상태인 식당 ID 목록 조회
         List<UUID> restaurantIds = waitingRepository.findDistinctRestaurantIdsWithWaiting();
@@ -31,7 +31,7 @@ public class WaitingScheduler {
             try{
                 waitingService.activateNextBatch(restaurantId);
             }catch (Exception e){
-                log.error("[스케줄러] activateNextBatch 실패 - restaurantId: {}", restaurantId, e);
+                log.error("[Scheduler] ActivateNextBatch Fail - restaurantId: {}", restaurantId, e);
             }
         });
 
@@ -39,11 +39,11 @@ public class WaitingScheduler {
     // 만료 처리
     @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:10000}")
     public void expireWaitings(){
-        log.info("[스케줄러] expireWaitings 실행");
+        log.info("[Scheduler] ExpireWaitings 실행");
         try {
             waitingService.expireWaitings();
         }catch (Exception e){
-            log.error("[스케줄러] expireWaitings 실패", e);
+            log.error("[Scheduler] ExpireWaitings 실패", e);
         }
     }
 
