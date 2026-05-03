@@ -3,6 +3,7 @@ package com.michelet.waiting.domain.entity;
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
+import com.michelet.waiting.domain.vo.AccessToken;
 import com.michelet.waiting.domain.vo.WaitingToken;
 import lombok.Getter;
 
@@ -19,9 +20,11 @@ public class Waiting {
     private WaitingStatus status;
     private final LocalDateTime enteredAt;
     private       LocalDateTime activatedAt;
+    private AccessToken accessToken;
 
     private Waiting(UUID id, UUID userId, UUID restaurantId, WaitingToken token,
-                    WaitingStatus status, LocalDateTime enteredAt, LocalDateTime activatedAt){
+                    WaitingStatus status, LocalDateTime enteredAt, LocalDateTime activatedAt,
+                    AccessToken accessToken){
         this.id           = Objects.requireNonNull(id,           "id must not be null");
         this.userId       = Objects.requireNonNull(userId,       "userId must not be null");
         this.restaurantId = Objects.requireNonNull(restaurantId, "restaurantId must not be null");
@@ -29,14 +32,18 @@ public class Waiting {
         this.status       = Objects.requireNonNull(status,       "status must not be null");
         this.enteredAt    = Objects.requireNonNull(enteredAt,    "enteredAt must not be null");
         this.activatedAt  = activatedAt;
+        this.accessToken = accessToken;
     }
 
     public static Waiting create(UUID userId, UUID restaurantId){
         return new Waiting(
-                UUID.randomUUID(), userId, restaurantId,
+                UUID.randomUUID(),
+                userId,
+                restaurantId,
                 WaitingToken.generate(),
                 WaitingStatus.WAITING,
                 LocalDateTime.now(),
+                null,
                 null
         );
     }
@@ -44,18 +51,22 @@ public class Waiting {
     // db 복원용 , JpaEntity.toDomain() 에서만 호출용으로 사용
     public static Waiting restore(UUID id, UUID userId, UUID restaurantId,
                                   WaitingToken token, WaitingStatus status,
-                                  LocalDateTime enteredAt, LocalDateTime activatedAt){
+                                  LocalDateTime enteredAt, LocalDateTime activatedAt,
+                                  AccessToken accessToken){
         if(status == WaitingStatus.ACTIVE && activatedAt == null){
             throw new WaitingException(WaitingErrorCode.INVALID_ACTIVATED_AT);
         }
-        return new Waiting(id, userId, restaurantId, token, status, enteredAt, activatedAt);
+        return new Waiting(id, userId, restaurantId, token, status, enteredAt, activatedAt, accessToken);
     }
 
     public void activate(){
         if (status != WaitingStatus.WAITING)
             throw new WaitingException(WaitingErrorCode.INVALID_STATE);
+        if (accessToken != null)
+            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
         this.status      = WaitingStatus.ACTIVE;
         this.activatedAt = LocalDateTime.now();
+        this.accessToken = AccessToken.generate();
     }
 
     public void cancel(){
@@ -74,7 +85,12 @@ public class Waiting {
         if (status != WaitingStatus.ACTIVE) return false;
         return activatedAt.isBefore(LocalDateTime.now().minusMinutes(10));
     }
+
     public boolean isActive(){
         return status == WaitingStatus.ACTIVE;
+    }
+
+    public boolean isValidAccessToken(String token){
+        return accessToken != null && accessToken.value().equals(token);
     }
 }
