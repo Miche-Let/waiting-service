@@ -3,6 +3,7 @@ package com.michelet.waiting.infrastructure.persistence.jpa;
 import com.michelet.common.entity.BaseEntity;
 import com.michelet.waiting.domain.entity.Waiting;
 import com.michelet.waiting.domain.enums.WaitingStatus;
+import com.michelet.waiting.domain.vo.AccessToken;
 import com.michelet.waiting.domain.vo.WaitingToken;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -42,6 +43,9 @@ public class WaitingJpaEntity extends BaseEntity {
     @Column(name = "activated_at")
     private LocalDateTime activatedAt;
 
+    @Column(name = "access_token")
+    private String accessToken;
+
     // Domain -> JPA
     public static WaitingJpaEntity from(Waiting w){
         WaitingJpaEntity e = new WaitingJpaEntity();
@@ -52,6 +56,9 @@ public class WaitingJpaEntity extends BaseEntity {
         e.token = w.getToken().value();
         e.enteredAt = w.getEnteredAt();
         e.activatedAt = w.getActivatedAt();
+        e.accessToken = w.getAccessToken() != null
+                ? w.getAccessToken().value()
+                : null;
         return e;
     }
     // JPA -> Domain
@@ -59,7 +66,8 @@ public class WaitingJpaEntity extends BaseEntity {
         return Waiting.restore(
                 id, userId, restaurantId,
                 WaitingToken.of(token),
-                status, enteredAt, activatedAt
+                status, enteredAt, activatedAt,
+                accessToken != null ? AccessToken.of(accessToken) : null
         );
     }
 
