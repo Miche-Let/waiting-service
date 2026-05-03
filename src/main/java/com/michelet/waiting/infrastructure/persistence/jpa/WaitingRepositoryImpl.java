@@ -37,6 +37,12 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     }
 
     @Override
+    public Optional<Waiting> findByAccessToken(String accessToken) {
+        return jpa.findByAccessTokenAndDeletedAtIsNull(accessToken)
+                .map(WaitingJpaEntity::toDomain);
+    }
+
+    @Override
     public List<Waiting> findWaitingByRestaurantId(UUID restaurantId) {
         return jpa.findByRestaurantIdAndStatusAndDeletedAtIsNull(restaurantId, WaitingStatus.WAITING)
                 .stream()
