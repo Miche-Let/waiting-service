@@ -62,6 +62,11 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     }
 
     @Override
+    public List<UUID> findDistinctRestaurantIdsWithWaiting() {
+        return queryRepository.findDistinctRestaurantIdsWithWaiting();
+    }
+
+    @Override
     public void deleteExpiredBefore(LocalDateTime threshold) {
         jpa.deleteByStatusAndEnteredAtBefore(WaitingStatus.EXPIRED, threshold);
     }
