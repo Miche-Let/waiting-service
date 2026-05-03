@@ -89,11 +89,15 @@ public class WaitingService {
 
     // ACTIVE 상태인지 검증 - 예약 서비스가 예약 전 호출
     @Transactional(readOnly = true)
-    public WaitingResult verifyToken(String token){
-        Waiting waiting = waitingRepository.findByToken(token)
+    public WaitingResult verifyToken(String accessToken){
+        Waiting waiting = waitingRepository.findByAccessToken(accessToken)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
+        // 상태 검증
         if(!waiting.isActive())
             throw new WaitingException(WaitingErrorCode.INVALID_STATE);
+        // 유효성 검증
+        if(!waiting.isValidAccessToken(accessToken))
+            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
 
         return WaitingResult.of(waiting);
     }
