@@ -16,9 +16,10 @@ public record WaitingResult(
         WaitingStatus status,
         LocalDateTime enteredAt,
         LocalDateTime activatedAt,
-        Long estimatedWaitSeconds
+        Long estimatedWaitSeconds,
+        String accessToken
 ) {
-    // 대기중 - position 필요
+    // WAITING 상태 - position 필요
     public static WaitingResult of(Waiting w, Long position){
         Objects.requireNonNull(w, "waiting must not be null");
         Objects.requireNonNull(position, "position must not be null");
@@ -31,10 +32,12 @@ public record WaitingResult(
                 w.getStatus(),
                 w.getEnteredAt(),
                 w.getActivatedAt(),
-                Math.multiplyExact(position, 30L)
+                Math.multiplyExact(position, 30L),
+                null
         );
     }
 
+    // ACTIVE / EXPIRED / CANCELLED 상태
     public static WaitingResult of(Waiting w){
         Objects.requireNonNull(w, "waiting must not be null");
         return new WaitingResult(
@@ -44,7 +47,10 @@ public record WaitingResult(
                 w.getStatus(),
                 w.getEnteredAt(),
                 w.getActivatedAt(),
-                0L
+                0L,
+                w.getAccessToken() != null
+                    ? w.getAccessToken().value()
+                    :null
         );
     }
 }

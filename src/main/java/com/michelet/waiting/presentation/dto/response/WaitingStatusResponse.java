@@ -12,7 +12,8 @@ public record WaitingStatusResponse(
         String status,
         LocalDateTime enteredAt,
         LocalDateTime activatedAt,
-        Long estimatedWaitSeconds
+        Long estimatedWaitSeconds,
+        String accessToken
 ) {
     public static WaitingStatusResponse from(WaitingResult result){
         return new WaitingStatusResponse(
@@ -22,7 +23,8 @@ public record WaitingStatusResponse(
                 result.status().name(),
                 result.enteredAt(),
                 result.activatedAt(),
-                result.estimatedWaitSeconds()
+                result.estimatedWaitSeconds(),
+                result.accessToken()
         );
     }
 }
