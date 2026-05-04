@@ -36,10 +36,9 @@ public class WaitingInternalController {
     // 예약 완료 후 토큰 삭제 - 예약 서비스가 예약 완료 시 호출
     @DeleteMapping("/{waitingId}/complete")
     public ResponseEntity<ApiResponse<Void>> completeWaiting(
-            @PathVariable UUID waitingId,
-            @RequestHeader("X-User-Id") UUID userId
+            @PathVariable UUID waitingId
         ){
-        waitingService.completeWaiting(waitingId, userId);
+        waitingService.completeWaiting(waitingId);
         return ResponseEntity
                 .status(WaitingSuccessCode.DELETE_SUCCESS.getHttpStatus())
                 .body(ApiResponse.ok(

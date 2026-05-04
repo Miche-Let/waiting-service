@@ -1,6 +1,9 @@
 package com.michelet.waiting.presentation.controller;
 
 
+import com.michelet.common.auth.core.annotation.RequireRole;
+import com.michelet.common.auth.core.enums.UserRole;
+import com.michelet.common.auth.webmvc.context.UserContextHolder;
 import com.michelet.common.response.ApiResponse;
 import com.michelet.waiting.application.dto.GetWaitingStatusQuery;
 import com.michelet.waiting.application.dto.WaitingResult;
@@ -23,6 +26,7 @@ public class WaitingApiController {
     private final WaitingService waitingService;
 
     // 대기 등록
+    @RequireRole(UserRole.USER)
     @PostMapping
     public ResponseEntity<ApiResponse<WaitingStatusResponse>>enter(
             @RequestBody @Valid EnterWaitingRequest request
@@ -37,6 +41,7 @@ public class WaitingApiController {
     }
 
     // 대기 순번 조회
+    @RequireRole(UserRole.USER)
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<WaitingStatusResponse>> getStatus(
             @RequestParam String token
@@ -54,11 +59,12 @@ public class WaitingApiController {
     }
 
     // 대기열 취소
+    @RequireRole(UserRole.USER)
     @DeleteMapping("/{waitingId}")
     public ResponseEntity<ApiResponse<Void>> cancel(
-            @PathVariable UUID waitingId,
-            @RequestHeader("X-User-Id") UUID userId
+            @PathVariable UUID waitingId
     ){
+        UUID userId = UUID.fromString(UserContextHolder.get().userId());
         waitingService.cancelWaiting(waitingId, userId);
         return ResponseEntity
                 .status(WaitingSuccessCode.CANCEL_SUCCESS.getHttpStatus())

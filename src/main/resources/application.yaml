@@ -1,35 +1,11 @@
 spring:
   application:
     name: waiting-service
+  main:
+    allow-bean-definition-overriding: true
 
-  datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:michelet_db}
-    username: ${POSTGRES_USER:admin}
-    password: ${POSTGRES_PASSWORD:admin}
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: waiting_service
-        format_sql: true
-    show-sql: false
-    open-in-view: false
-
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    schemas: waiting_service
-    default-schema: waiting_service
-    baseline-on-migrate: true
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+server:
+  port: 19200
 
 waiting:
   activate-ratio: 0.1
