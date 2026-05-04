@@ -23,21 +23,19 @@ public class WaitingScheduler {
     @Scheduled(fixedDelayString = "${waiting.activate-scheduler-delay-ms:10000}")
     public void activateNextBatch() {
         log.info("[스케줄러] activateNextBatch 실행");
-
-        // WAITING 상태인 식당 ID 목록 조회
         List<UUID> restaurantIds = waitingRepository.findDistinctRestaurantIdsWithWaiting();
-
-        restaurantIds.forEach(restaurantId -> {
-            try{
+        for (UUID restaurantId : restaurantIds) {
+            try {
                 waitingService.activateNextBatch(restaurantId);
-            }catch (Exception e){
+            } catch (Exception e) {
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
+                    log.warn("[스케줄러] activateNextBatch 인터럽트 - restaurantId: {}", restaurantId, e);
+                    break;
                 }
-                log.error("[스케줄러] activateNextBatch 실패 - restaurantId: {}", restaurantId, e);
+                log.warn("[스케줄러] activateNextBatch 실패 - restaurantId: {}", restaurantId, e);
             }
-        });
-
+        }
     }
     // 만료 처리
     @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:10000}")
