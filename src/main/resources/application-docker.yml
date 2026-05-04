@@ -1,0 +1,32 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_CONTAINER_NAME}:${EUREKA_PORT}/eureka/
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_CONTAINER_NAME}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: waiting_service
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: waiting_service
+    default-schema: waiting_service
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_CONTAINER_NAME}
+      port: ${REDIS_PORT:6379}

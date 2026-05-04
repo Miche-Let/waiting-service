@@ -103,13 +103,13 @@ public class WaitingService {
     }
 
     // 토큰 삭제 - 예약 서비스가 예약 완료 후 호출
-    public void completeWaiting(UUID waitingId, UUID deletedBy){
+    public void completeWaiting(UUID waitingId){
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
         if(!waiting.isActive())
             throw new WaitingException(WaitingErrorCode.INVALID_STATE);
 
-        waitingRepository.softDelete(waitingId, deletedBy);
+        waitingRepository.softDelete(waitingId, null);
 
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
     }

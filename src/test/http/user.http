@@ -1,0 +1,115 @@
+### 환경변수 설정
+@gatewayUrl = http://localhost:19000
+# internal은 게이트웨이 거치지 않고 직접 호출
+@internalUrl = http://localhost:19200
+
+
+### 테스트 USER 계정
+@userLoginId = test9
+@userPassword = test123!
+@userName = user9
+@userEmail = user009@naver.com
+@userPhone = 010-1000-2006
+
+
+### 대기 등록 후 아래 변수에 응답값 입력
+@waitingId = 38301fc1-286d-41db-8e54-2d117897bf3f
+@waitingToken = 4ebbf0ca-3cfe-431f-9ede-7043a1868f7b
+@restaurantId = 456e7890-e89b-12d3-a456-428914164000
+
+### 스케줄러 실행 후 ACTIVE 전환되면
+### 대기 순번 조회 응답에서 accessToken 복사
+@waitingAccessToken = dc091aea-63cb-4202-89a9-9a61ffbf378b
+
+
+### 1. USER 회원가입
+POST {{gatewayUrl}}/api/v1/users/signup
+Content-Type: application/json
+
+{
+  "loginId": "{{userLoginId}}",
+  "password": "{{userPassword}}",
+  "name": "{{userName}}",
+  "email": "{{userEmail}}",
+  "phone": "{{userPhone}}",
+  "userRole": "USER"
+}
+
+
+### 2. USER 로그인
+POST {{gatewayUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "{{userLoginId}}",
+  "password": "{{userPassword}}"
+}
+
+> {%
+    client.global.clear("userToken");
+    let token = null;
+    if (response.body.data && response.body.data.accessToken) {
+        token = response.body.data.accessToken;
+    } else if (response.body.data && response.body.data.token) {
+        token = response.body.data.token;
+    } else if (response.body.accessToken) {
+        token = response.body.accessToken;
+    }
+    if (token) {
+        client.global.set("userToken", token);
+    }
+%}
+
+
+### 3. 식당 검색 | 식당 목록 조회
+
+### 4. 식당 상세 조회
+
+### 5. 코스 목록 조회
+
+### 6. 예약 캘린더 조회
+
+### 6-1 예약자 많은 경우(부하 발생 시 대기열 진입)
+
+### 6-1-a대기열 입장
+# 응답에서 data.token → @waitingToken 에 입력
+# 응답에서 data.waitingId → @waitingId 에 입력
+POST {{gatewayUrl}}/api/v1/waitings
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "restaurantId": "{{restaurantId}}"
+}
+
+### 6-1-ⅰ 대기 순번 조회
+# 응답에서 data.status 가 ACTIVE가 될 시
+# data.accesssToken ( 입장용 토큰 ) -> @waitingAccessToken 에 입력
+GET {{gatewayUrl}}/api/v1/waitings/status?token={{waitingToken}}
+Authorization: Bearer {{userToken}}
+
+### 6-1-ⅱ 대기 취소
+DELETE {{gatewayUrl}}/api/v1/waitings/{{waitingId}}
+Authorization: Bearer {{userToken}}
+
+### 6-1-c 스케줄러를 통해 10초마다 입장용 토큰  발급 (자동 처리)
+
+### 6-2 월간 예약 가능한 날짜 조회
+
+### 7. 특정 일자의 예약 가능한 타임 슬롯 목록 조회
+
+### 8. 예약 시간대 선택  후 예약 진행
+
+### 8-1 예약 등록 api 호출
+
+### 8-1-ⅰ 입장 가능 여부 검증
+GET {{internalUrl}}/internal/waitings/verify-token?token={{waitingAccessToken}}
+
+### 8-1-ⅱ 예약 확정 api 호출
+
+### 8-1-ⅲ 예약 완료 후 토큰 삭제
+DELETE {{internalUrl}}/internal/waitings/{{waitingId}}/complete
+
+### 8-1-ⅳ 예약 완료 알림 ( 비동기 호출 )
+
+### 9. 예약 상세 조회
