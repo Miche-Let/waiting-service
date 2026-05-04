@@ -17,5 +17,6 @@ public interface WaitingRepository {
     List<Waiting> findExpiredActives(LocalDateTime expiredBefore);
     List<UUID> findDistinctRestaurantIdsWithWaiting();
     void softDelete(UUID waitingId, UUID deletedBy);
+    List<UUID> findDistinctRestaurantIdsWithWaiting();
 
 }
