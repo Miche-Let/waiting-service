@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -25,6 +26,18 @@ public class WaitingQueryRepository {
                 .where(
                         w.status.eq(WaitingStatus.ACTIVE),
                         w.activatedAt.before(expiredBefore),
+                        w._super.deletedAt.isNull()
+                )
+                .fetch();
+    }
+
+    public List<UUID> findDistinctRestaurantIdsWithWaiting(){
+        return queryFactory
+                .select(w.restaurantId)
+                .distinct()
+                .from(w)
+                .where(
+                        w.status.eq(WaitingStatus.WAITING),
                         w._super.deletedAt.isNull()
                 )
                 .fetch();
