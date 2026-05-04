@@ -48,7 +48,7 @@ public record WaitingResult(
                 w.getEnteredAt(),
                 w.getActivatedAt(),
                 0L,
-                w.getAccessToken() != null
+                w.getStatus() == WaitingStatus.ACTIVE && w.getAccessToken() != null
                     ? w.getAccessToken().value()
                     :null
         );
