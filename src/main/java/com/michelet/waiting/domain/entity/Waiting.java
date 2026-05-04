@@ -93,6 +93,8 @@ public class Waiting {
     }
 
     public boolean isValidAccessToken(String token){
-        return accessToken != null && accessToken.value().equals(token);
+        return status == WaitingStatus.ACTIVE
+                && accessToken != null
+                && accessToken.value().equals(token);
     }
 }
