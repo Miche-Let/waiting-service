@@ -10,12 +10,12 @@ import java.util.UUID;
 public interface WaitingRepository {
 
     Waiting save(Waiting waiting);
-
     Optional<Waiting> findByToken(String token);
     Optional<Waiting> findById(UUID id);
+    Optional<Waiting> findByAccessToken(String accessToken);
     List<Waiting> findWaitingByRestaurantId(UUID restaurantId);
     List<Waiting> findExpiredActives(LocalDateTime expiredBefore);
-    void softDelete(UUID waitingId, UUID deletedBy);
     List<UUID> findDistinctRestaurantIdsWithWaiting();
+    void softDelete(UUID waitingId, UUID deletedBy);
 
 }

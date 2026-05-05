@@ -3,6 +3,7 @@ package com.michelet.waiting.domain.entity;
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
+import com.michelet.waiting.domain.vo.AccessToken;
 import com.michelet.waiting.domain.vo.WaitingToken;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class WaitingTest {
         assertThat(waiting.getToken().value()).isNotBlank();
         assertThat(waiting.getStatus()).isEqualTo(WaitingStatus.WAITING);
         assertThat(waiting.getEnteredAt()).isNotNull();
+        assertThat(waiting.getAccessToken()).isNull();
     }
 
     @Test
@@ -56,10 +58,20 @@ class WaitingTest {
     }
 
     @Test
+    @DisplayName("activate() 호출 시 accessToken 이 발급된다")
+    void activate_generates_access_token() {
+        Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
+        waiting.activate();
+
+        assertThat(waiting.getAccessToken()).isNotNull();
+        assertThat(waiting.getAccessToken().value()).isNotBlank();
+    }
+
+    @Test
     @DisplayName("WAITING 이 아닌 상태에서 activate() 호출 시 WaitingException 이 발생한다")
     void activate_fail_when_already_active() {
         Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
-        waiting.activate(); // ACTIVE 로 전환
+        waiting.activate();
 
         assertThatThrownBy(waiting::activate)
                 .isInstanceOf(WaitingException.class)
@@ -120,20 +132,23 @@ class WaitingTest {
                 WaitingToken.generate(),
                 WaitingStatus.ACTIVE,
                 LocalDateTime.now(),
-                LocalDateTime.now().minusMinutes(11)  // activatedAt 11분 전
+                LocalDateTime.now().minusMinutes(11),
+                AccessToken.generate()  // ← accessToken 추가
         );
+
         assertThat(waiting.isExpired()).isTrue();
     }
 
     @Test
-    @DisplayName("enteredAt 이 10분 이내이면 isExpired() 는 false 를 반환한다")
+    @DisplayName("ACTIVE 전환 후 10분 이내이면 isExpired() 는 false 를 반환한다")
     void isExpired_false_within_10_minutes() {
         Waiting waiting = Waiting.restore(
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
                 WaitingStatus.ACTIVE,
                 LocalDateTime.now(),
-                LocalDateTime.now().minusMinutes(9)  // activatedAt 9분 전
+                LocalDateTime.now().minusMinutes(9),
+                AccessToken.generate()  // ← accessToken 추가
         );
 
         assertThat(waiting.isExpired()).isFalse();
@@ -149,20 +164,6 @@ class WaitingTest {
 
         assertThat(waiting.isActive()).isTrue();
     }
-
-    @Test
-    @DisplayName("WAITING 상태는 enteredAt 이 오래되어도 isExpired() 는 false 를 반환한다")
-    void  isExpired_false_when_waiting_even_if_entered_at_old() {
-        Waiting waiting = Waiting.restore(
-                UUID.randomUUID(), USER_ID, RESTAURANT_ID,
-                WaitingToken.generate(),
-                WaitingStatus.WAITING,
-                LocalDateTime.now().minusHours(1),
-                null);
-
-        assertThat(waiting.isExpired()).isFalse();
-    }
-
     @Test
     @DisplayName("WAITING 상태이면 isActive() 는 false 를 반환한다")
     void isActive_false_when_waiting() {
@@ -171,15 +172,55 @@ class WaitingTest {
         assertThat(waiting.isActive()).isFalse();
     }
 
+    // ── isValidAccessToken() ─────────────────────────────────────
+
     @Test
-    @DisplayName("ACTIVE 상태로 복원 시 activatedAt 이 null 이면 WaitingException 이 발생한다")
+    @DisplayName("유효한 accessToken 이면 isValidAccessToken() 은 true 를 반환한다")
+    void isValidAccessToken_true_when_valid() {
+        Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
+        waiting.activate();
+
+        assertThat(waiting.isValidAccessToken(
+                waiting.getAccessToken().value())).isTrue();
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 accessToken 이면 isValidAccessToken() 은 false 를 반환한다")
+    void isValidAccessToken_false_when_invalid() {
+        Waiting waiting = Waiting.create(USER_ID, RESTAURANT_ID);
+        waiting.activate();
+
+        assertThat(waiting.isValidAccessToken("invalid-token")).isFalse();
+    }
+
+    // ── restore() ───────────────────────────────────────────────
+    @Test
+    @DisplayName("WAITING 상태는 오래되어도 isExpired() 는 false 를 반환한다")
+    void isExpired_false_when_waiting_even_if_entered_at_old() {
+        Waiting waiting = Waiting.restore(
+                UUID.randomUUID(), USER_ID, RESTAURANT_ID,
+                WaitingToken.generate(),
+                WaitingStatus.WAITING,
+                LocalDateTime.now().minusHours(1),
+                null,
+                null  // ← accessToken null
+        );
+
+        assertThat(waiting.isExpired()).isFalse();
+    }
+
+
+
+    @Test
+    @DisplayName("ACTIVE 상태로 복원 시 activatedAt, accessToken 이 null 이면 WaitingException 이 발생한다")
     void restore_fail_when_active_and_activatedAt_is_null() {
         assertThatThrownBy(() -> Waiting.restore(
                 UUID.randomUUID(), USER_ID, RESTAURANT_ID,
                 WaitingToken.generate(),
                 WaitingStatus.ACTIVE,
                 LocalDateTime.now(),
-                null  // activatedAt null
+                null,
+                null
         ))
                 .isInstanceOf(WaitingException.class)
                 .hasMessage(WaitingErrorCode.INVALID_ACTIVATED_AT.getMessage());

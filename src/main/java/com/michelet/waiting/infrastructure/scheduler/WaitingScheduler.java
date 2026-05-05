@@ -22,28 +22,32 @@ public class WaitingScheduler {
     // 모든 식당의 대기열을 순회하며 10% 인원 활성화
     @Scheduled(fixedDelayString = "${waiting.activate-scheduler-delay-ms:10000}")
     public void activateNextBatch() {
-        log.info("[Scheduler] ActivateNextBatch Run");
-
-        // WAITING 상태인 식당 ID 목록 조회
+        log.info("[스케줄러] activateNextBatch 실행");
         List<UUID> restaurantIds = waitingRepository.findDistinctRestaurantIdsWithWaiting();
-
-        restaurantIds.forEach(restaurantId -> {
-            try{
+        for (UUID restaurantId : restaurantIds) {
+            try {
                 waitingService.activateNextBatch(restaurantId);
-            }catch (Exception e){
-                log.error("[Scheduler] ActivateNextBatch Fail - restaurantId: {}", restaurantId, e);
+            } catch (Exception e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    log.warn("[스케줄러] activateNextBatch 인터럽트 - restaurantId: {}", restaurantId, e);
+                    break;
+                }
+                log.warn("[스케줄러] activateNextBatch 실패 - restaurantId: {}", restaurantId, e);
             }
-        });
-
+        }
     }
     // 만료 처리
     @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:10000}")
     public void expireWaitings(){
-        log.info("[Scheduler] ExpireWaitings 실행");
+        log.info("[스케줄러] expireWaitings 실행");
         try {
             waitingService.expireWaitings();
         }catch (Exception e){
-            log.error("[Scheduler] ExpireWaitings 실패", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.error("[스케줄러] expireWaitings 실패", e);
         }
     }
 

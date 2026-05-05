@@ -5,12 +5,12 @@
 
 ### 대기 등록 후 아래 변수에 응답값 입력
 @waitingId = <waitingId>
-@token = <token>
+@accessToken = <accessToken>
 
 ### 1. 입장 가능 여부 검증
 # ACTIVE 상태일 때만 성공 응답
 # WAITING 상태면 400 에러
-GET {{baseUrl}}/internal/waitings/verify-token?token={{token}}
+GET {{baseUrl}}/internal/waitings/verify-token?token={{accessToken}}
 
 ### 2. 예약 완료 후 토큰 삭제
 # ACTIVE 상태일 때만 삭제 가능

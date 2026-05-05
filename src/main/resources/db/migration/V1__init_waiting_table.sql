@@ -4,10 +4,11 @@ CREATE TABLE IF NOT EXISTS p_waiting_queue
     user_id       UUID         NOT NULL,
     restaurant_id UUID         NOT NULL,
     status        VARCHAR(20)  NOT NULL
-    CHECK (status IN ('WAITING', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
+        CHECK (status IN ('WAITING', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
     queue_token   VARCHAR(255) NOT NULL,
     entered_at    TIMESTAMP    NOT NULL,
     activated_at  TIMESTAMP,
+    access_token  VARCHAR(255) UNIQUE,
 
     -- BaseEntity 컬럼
     created_at    TIMESTAMP    NOT NULL,
