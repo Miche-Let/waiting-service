@@ -8,6 +8,8 @@ import com.michelet.common.response.ApiResponse;
 import com.michelet.waiting.application.dto.GetWaitingStatusQuery;
 import com.michelet.waiting.application.dto.WaitingResult;
 import com.michelet.waiting.application.service.WaitingService;
+import com.michelet.waiting.domain.exception.WaitingErrorCode;
+import com.michelet.waiting.domain.exception.WaitingException;
 import com.michelet.waiting.presentation.WaitingSuccessCode;
 import com.michelet.waiting.presentation.dto.request.EnterWaitingRequest;
 import com.michelet.waiting.presentation.dto.response.WaitingStatusResponse;
@@ -64,11 +66,18 @@ public class WaitingApiController {
     public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable UUID waitingId
     ){
-        UUID userId = UUID.fromString(UserContextHolder.get().userId());
-        waitingService.cancelWaiting(waitingId, userId);
+        waitingService.cancelWaiting(waitingId, getAuthenticatedUserId());
         return ResponseEntity
                 .status(WaitingSuccessCode.CANCEL_SUCCESS.getHttpStatus())
                 .body(ApiResponse.ok(WaitingSuccessCode.CANCEL_SUCCESS, null));
+    }
+
+    private UUID getAuthenticatedUserId(){
+        try{
+            return UUID.fromString(UserContextHolder.get().userId());
+        }catch (IllegalArgumentException | NullPointerException e){
+            throw new WaitingException(WaitingErrorCode.UNAUTHORIZED);
+        }
     }
 
 }
