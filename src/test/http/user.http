@@ -13,13 +13,13 @@
 
 
 ### 대기 등록 후 아래 변수에 응답값 입력
-@waitingId = 38301fc1-286d-41db-8e54-2d117897bf3f
-@waitingToken = 4ebbf0ca-3cfe-431f-9ede-7043a1868f7b
-@restaurantId = 456e7890-e89b-12d3-a456-428914164000
+@waitingId = <waitingId>
+@waitingToken = <waitingToken>
+@restaurantId = <restaurantId>
 
 ### 스케줄러 실행 후 ACTIVE 전환되면
 ### 대기 순번 조회 응답에서 accessToken 복사
-@waitingAccessToken = dc091aea-63cb-4202-89a9-9a61ffbf378b
+@waitingAccessToken = <waitingAccessToken>
 
 
 ### 1. USER 회원가입
