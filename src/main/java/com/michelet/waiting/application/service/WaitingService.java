@@ -31,6 +31,9 @@ public class WaitingService {
     @Value("${waiting.expire-minutes:10}")
     private int expireMinutes;
 
+    private static final UUID SYSTEM_UUID =
+            UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     // 대기 등록
     public WaitingResult enterWaiting(EnterWaitingCommand command){
 
@@ -112,7 +115,7 @@ public class WaitingService {
         if(!waiting.isActive())
             throw new WaitingException(WaitingErrorCode.INVALID_STATE);
 
-        waitingRepository.softDelete(waitingId, null);
+        waitingRepository.softDelete(waitingId, SYSTEM_UUID);
 
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
     }
