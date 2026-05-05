@@ -19,11 +19,9 @@ public class AuditorConfig {
                 if (userId != null && !userId.isBlank()) {
                     return Optional.of(UUID.fromString(userId));
                 }
-            } catch (Exception e) {
+            } catch (RuntimeException ignored) {
             }
-            // 로컬 테스트용 임시 고정값
-            return Optional.of(UUID.fromString(
-                    "00000000-0000-0000-0000-000000000000"));
+            return Optional.empty();
         };
     }
 }
