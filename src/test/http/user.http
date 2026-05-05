@@ -84,7 +84,7 @@ Authorization: Bearer {{userToken}}
 
 ### 6-1-ⅰ 대기 순번 조회
 # 응답에서 data.status 가 ACTIVE가 될 시
-# data.accesssToken ( 입장용 토큰 ) -> @waitingAccessToken 에 입력
+# data.accessToken ( 입장용 토큰 ) -> @waitingAccessToken 에 입력
 GET {{gatewayUrl}}/api/v1/waitings/status?token={{waitingToken}}
 Authorization: Bearer {{userToken}}
 
