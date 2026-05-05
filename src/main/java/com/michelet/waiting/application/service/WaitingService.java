@@ -81,7 +81,7 @@ public class WaitingService {
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
 
         if(!waiting.getUserId().equals(deletedBy)){
-            throw new WaitingException(WaitingErrorCode.UNAUTHORIZED);
+            throw new WaitingException(WaitingErrorCode. FORBIDDEN);
         }
 
         waiting.cancel();
