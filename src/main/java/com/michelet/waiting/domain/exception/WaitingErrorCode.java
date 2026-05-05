@@ -14,7 +14,7 @@ public enum WaitingErrorCode implements ErrorCode{
     INVALID_ACTIVATED_AT("WAITING_005", "ACTIVE 상태는 activatedAt 이 필요합니다", 400),
     INVALID_POSITION("WAITING_006", "순번은 0 이상이어야 합니다", 400),
     QUEUE_SEQUENCE_FAILED("WAITING_007", "대기열 순번 할당에 실패했습니다", 500),
-    UNAUTHORIZED("WAITING_008", "대기열 취소 권한이 없습니다.", 403);
+    UNAUTHORIZED("WAITING_008", "인증 정보가 유효하지 않습니다.", 401);
 
     private final String code;
     private final String message;
