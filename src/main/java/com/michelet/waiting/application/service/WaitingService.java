@@ -31,6 +31,9 @@ public class WaitingService {
     @Value("${waiting.expire-minutes:10}")
     private int expireMinutes;
 
+    private static final UUID SYSTEM_UUID =
+            UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     // 대기 등록
     public WaitingResult enterWaiting(EnterWaitingCommand command){
 
@@ -78,7 +81,7 @@ public class WaitingService {
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
 
         if(!waiting.getUserId().equals(deletedBy)){
-            throw new WaitingException(WaitingErrorCode.UNAUTHORIZED);
+            throw new WaitingException(WaitingErrorCode. FORBIDDEN);
         }
 
         waiting.cancel();
@@ -106,13 +109,13 @@ public class WaitingService {
     }
 
     // 토큰 삭제 - 예약 서비스가 예약 완료 후 호출
-    public void completeWaiting(UUID waitingId, UUID deletedBy){
+    public void completeWaiting(UUID waitingId){
         Waiting waiting = waitingRepository.findById(waitingId)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
         if(!waiting.isActive())
             throw new WaitingException(WaitingErrorCode.INVALID_STATE);
 
-        waitingRepository.softDelete(waitingId, deletedBy);
+        waitingRepository.softDelete(waitingId, SYSTEM_UUID);
 
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
     }

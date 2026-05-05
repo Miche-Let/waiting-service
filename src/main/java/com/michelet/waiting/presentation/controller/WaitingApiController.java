@@ -1,10 +1,15 @@
 package com.michelet.waiting.presentation.controller;
 
 
+import com.michelet.common.auth.core.annotation.RequireRole;
+import com.michelet.common.auth.core.enums.UserRole;
+import com.michelet.common.auth.webmvc.context.UserContextHolder;
 import com.michelet.common.response.ApiResponse;
 import com.michelet.waiting.application.dto.GetWaitingStatusQuery;
 import com.michelet.waiting.application.dto.WaitingResult;
 import com.michelet.waiting.application.service.WaitingService;
+import com.michelet.waiting.domain.exception.WaitingErrorCode;
+import com.michelet.waiting.domain.exception.WaitingException;
 import com.michelet.waiting.presentation.WaitingSuccessCode;
 import com.michelet.waiting.presentation.dto.request.EnterWaitingRequest;
 import com.michelet.waiting.presentation.dto.response.WaitingStatusResponse;
@@ -23,6 +28,7 @@ public class WaitingApiController {
     private final WaitingService waitingService;
 
     // 대기 등록
+    @RequireRole(UserRole.USER)
     @PostMapping
     public ResponseEntity<ApiResponse<WaitingStatusResponse>>enter(
             @RequestBody @Valid EnterWaitingRequest request
@@ -37,6 +43,7 @@ public class WaitingApiController {
     }
 
     // 대기 순번 조회
+    @RequireRole(UserRole.USER)
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<WaitingStatusResponse>> getStatus(
             @RequestParam String token
@@ -54,15 +61,23 @@ public class WaitingApiController {
     }
 
     // 대기열 취소
+    @RequireRole(UserRole.USER)
     @DeleteMapping("/{waitingId}")
     public ResponseEntity<ApiResponse<Void>> cancel(
-            @PathVariable UUID waitingId,
-            @RequestHeader("X-User-Id") UUID userId
+            @PathVariable UUID waitingId
     ){
-        waitingService.cancelWaiting(waitingId, userId);
+        waitingService.cancelWaiting(waitingId, getAuthenticatedUserId());
         return ResponseEntity
                 .status(WaitingSuccessCode.CANCEL_SUCCESS.getHttpStatus())
                 .body(ApiResponse.ok(WaitingSuccessCode.CANCEL_SUCCESS, null));
+    }
+
+    private UUID getAuthenticatedUserId(){
+        try{
+            return UUID.fromString(UserContextHolder.get().userId());
+        }catch (IllegalArgumentException | NullPointerException e){
+            throw new WaitingException(WaitingErrorCode.UNAUTHORIZED);
+        }
     }
 
 }
