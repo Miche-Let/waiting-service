@@ -56,6 +56,8 @@ public class Waiting {
         if(status == WaitingStatus.ACTIVE && activatedAt == null){
             throw new WaitingException(WaitingErrorCode.INVALID_ACTIVATED_AT);
         }
+        if(status == WaitingStatus.ACTIVE && accessToken == null)
+            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
         return new Waiting(id, userId, restaurantId, token, status, enteredAt, activatedAt, accessToken);
     }
 
@@ -91,6 +93,8 @@ public class Waiting {
     }
 
     public boolean isValidAccessToken(String token){
-        return accessToken != null && accessToken.value().equals(token);
+        return status == WaitingStatus.ACTIVE
+                && accessToken != null
+                && accessToken.value().equals(token);
     }
 }

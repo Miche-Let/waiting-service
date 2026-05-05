@@ -90,6 +90,9 @@ public class WaitingService {
     // ACTIVE 상태인지 검증 - 예약 서비스가 예약 전 호출
     @Transactional(readOnly = true)
     public WaitingResult verifyToken(String accessToken){
+        if(accessToken == null || accessToken.isBlank())
+            throw new WaitingException(WaitingErrorCode.INVALID_TOKEN);
+
         Waiting waiting = waitingRepository.findByAccessToken(accessToken)
                 .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
         // 상태 검증
