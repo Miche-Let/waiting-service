@@ -7,6 +7,10 @@ spring:
 server:
   port: 19200
 
+internal:
+  auth:
+    secret: ${INTERNAL_AUTH_SECRET}
+
 waiting:
   activate-ratio: 0.1
   activate-scheduler-delay-ms: 10000

@@ -24,6 +24,7 @@ ext {
 
 dependencies {
     // Common
+    implementation 'com.github.Miche-Let:common-auth-feign:0.1.1'
     implementation 'com.github.Miche-Let:common-auth-webmvc:0.1.3'
     implementation 'com.github.Miche-Let:common:aaf3b1d'
 
