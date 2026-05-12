@@ -1,17 +1,17 @@
 package com.michelet.waiting.infrastructure.redis;
 
+import com.michelet.waiting.application.port.ScoredToken;
 import com.michelet.waiting.application.port.WaitingActivationPort;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -92,6 +92,29 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
                 .map(ZSetOperations.TypedTuple::getValue)
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    // socre 포함해서 토큰 꺼내기
+    @Override
+    public List<ScoredToken> popNextTokensWithScore(UUID restaurantId, int count) {
+        if (count <= 0) return List.of();
+        Set<ZSetOperations.TypedTuple<String>> tuples =
+        redisTemplate.opsForZSet()
+                .popMin(buildKey(restaurantId), count);
+        if (tuples == null || tuples.isEmpty()) return List.of();
+        return tuples.stream()
+                .map(t -> new ScoredToken(
+                        t.getValue(),
+                        t.getScore().longValue()
+                ))
+                .filter(s -> s.token() != null)
+                .toList();
+    }
+
+    @Override
+    public void addWithScore(UUID restaurantId, String token, Long score) {
+        redisTemplate.opsForZSet()
+                .add(buildKey(restaurantId), token, score);
     }
 
     @Override
