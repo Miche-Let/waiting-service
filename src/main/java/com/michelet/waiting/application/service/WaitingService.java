@@ -3,26 +3,31 @@ package com.michelet.waiting.application.service;
 import com.michelet.waiting.application.dto.EnterWaitingCommand;
 import com.michelet.waiting.application.dto.GetWaitingStatusQuery;
 import com.michelet.waiting.application.dto.WaitingResult;
+import com.michelet.waiting.application.port.ScoredToken;
 import com.michelet.waiting.application.port.WaitingActivationPort;
 import com.michelet.waiting.domain.entity.Waiting;
+import com.michelet.waiting.domain.entity.WaitingOutbox;
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
+import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class WaitingService {
     private final WaitingRepository waitingRepository;
+    private final WaitingOutboxRepository waitingOutboxRepository;
     private final WaitingActivationPort waitingActivationPort;
 
     @Value("${waiting.activate-ratio:0.1}")
@@ -129,14 +134,58 @@ public class WaitingService {
 
         int batchSize = (int) Math.max(1, Math.round(totalWaiting * activateRatio));
 
-        List<String> tokens = waitingActivationPort.popNextTokens(restaurantId, batchSize);
+        List<ScoredToken> scoredTokens = waitingActivationPort.popNextTokensWithScore(restaurantId,batchSize);
 
+        for(ScoredToken scoredToken : scoredTokens){
 
-        tokens.forEach(token ->
-                waitingRepository.findByToken(token).ifPresent(waiting -> {
-                    waiting.activate();
-                    waitingRepository.save(waiting);
-                }));
+            // 1. Outbox 에 PENDING 이벤트 기록
+            WaitingOutbox outbox = WaitingOutbox.create(
+                    null,
+                    scoredToken.token(),
+                    restaurantId,
+                    scoredToken.score()
+            );
+
+            try{
+                waitingRepository.findByToken(scoredToken.token())
+                        .ifPresent(waiting -> {
+
+                            // 2. DB ACTIVE 전환
+                            waiting.activate();
+                            waitingRepository.save(waiting);
+
+                            // 3. Outbox PROCESSED 기록
+                            WaitingOutbox processedOutbox = WaitingOutbox.create(
+                                    waiting.getId(),
+                                    scoredToken.token(),
+                                    restaurantId,
+                                    scoredToken.score()
+                            );
+                            processedOutbox.markProcessed();
+                            waitingOutboxRepository.save(processedOutbox);
+
+                        });
+            }catch (Exception e){
+                if(e instanceof InterruptedException){
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+
+                // 4. DB 저장 실패 시 원래 score로 Redis 복수
+                waitingActivationPort.addWithScore(
+                        restaurantId,
+                        scoredToken.token(),
+                        scoredToken.score()
+                );
+
+                // 5. Outbox FAILED 기록
+                outbox.markFailed();
+                waitingOutboxRepository.save(outbox);
+
+                log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복수 - token : {}",
+                        scoredToken.token(),e);
+            }
+        }
     }
 
     // 스케줄러 - 만료 처리
