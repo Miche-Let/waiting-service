@@ -12,5 +12,6 @@ internal:
 waiting:
   activate-ratio: 0.1
   activate-scheduler-delay-ms: 10000
-  expire-scheduler-delay-ms: 10000
+  expire-scheduler-delay-ms: 60000
   expire-minutes: 10
+  outbox-retry-delay-ms: 30000
