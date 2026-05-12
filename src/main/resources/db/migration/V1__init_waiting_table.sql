@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS p_waiting_queue
+CREATE TABLE IF NOT EXISTS waiting_service.p_waiting_queue
 (
     waiting_id    UUID         NOT NULL,
     user_id       UUID         NOT NULL,
@@ -21,6 +21,25 @@ CREATE TABLE IF NOT EXISTS p_waiting_queue
     PRIMARY KEY (waiting_id),
 
     CONSTRAINT uq_queue_token UNIQUE (queue_token)
+);
+CREATE TABLE IF NOT EXISTS waiting_service.p_waiting_outbox
+(
+    outbox_id     UUID         NOT NULL,
+    waiting_id    UUID,
+    token         VARCHAR(255) NOT NULL,
+    restaurant_id UUID         NOT NULL,
+    score         BIGINT       NOT NULL,
+    status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    processed_at  TIMESTAMP,
+
+    created_at    TIMESTAMP    NOT NULL,
+    created_by    UUID,
+    updated_at    TIMESTAMP,
+    updated_by    UUID,
+    deleted_at    TIMESTAMP,
+    deleted_by    UUID,
+
+    PRIMARY KEY (outbox_id)
     );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_waiting_active_unique
@@ -28,7 +47,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_waiting_active_unique
     WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_waiting_restaurant_status
-    ON p_waiting_queue (restaurant_id, status);
+    ON waiting_service.p_waiting_queue (restaurant_id, status);
 
 CREATE INDEX IF NOT EXISTS idx_waiting_token
-    ON p_waiting_queue (queue_token);
+    ON waiting_service.p_waiting_queue (queue_token);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_status
+    ON waiting_service.p_waiting_outbox (status);
