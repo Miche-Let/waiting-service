@@ -1,14 +1,16 @@
 package com.michelet.waiting.infrastructure.scheduler;
 
 import com.michelet.waiting.application.service.WaitingService;
+import com.michelet.waiting.domain.entity.WaitingOutbox;
+import com.michelet.waiting.domain.enums.WaitingStatus;
+import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -17,6 +19,7 @@ public class WaitingScheduler {
 
     private final WaitingService waitingService;
     private final WaitingRepository waitingRepository;
+    private final WaitingOutboxRepository waitingOutboxRepository;
 
     // N명씩 입장 허용
     // 모든 식당의 대기열을 순회하며 10% 인원 활성화
@@ -38,7 +41,7 @@ public class WaitingScheduler {
         }
     }
     // 만료 처리
-    @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:10000}")
+    @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:60000}")
     public void expireWaitings(){
         log.info("[스케줄러] expireWaitings 실행");
         try {
@@ -48,6 +51,31 @@ public class WaitingScheduler {
                 Thread.currentThread().interrupt();
             }
             log.error("[스케줄러] expireWaitings 실패", e);
+        }
+    }
+
+    // PENDING 상태 Outbox 재처리
+    @Scheduled(fixedDelayString = "${waiting.outbox-retry-delay-ms:30000")
+    public void retryPendingOutbox(){
+        log.info("[스케줄러] Outbox PENDING 재처리 실행");
+
+        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPending();
+
+        for(WaitingOutbox outbox : pendingList) {
+            try{
+                waitingRepository.findByToken(outbox.getToken())
+                        .ifPresent(waiting -> {
+                            if(waiting.getStatus() == WaitingStatus.WAITING){
+                                waiting.activate();
+                                waitingRepository.save(waiting);
+                            }
+                            outbox.markProcessed();
+                            waitingOutboxRepository.update(outbox);
+                        });
+            }catch (Exception e){
+                log.error("[스케줄러] Outbox 재처리 실패 - outboxId: {}",
+                        outbox.getOutboxId(), e);
+            }
         }
     }
 
