@@ -1,0 +1,125 @@
+### 공통 변수
+### 인증/회원가입/로그인은 Gateway 경유
+@authUrl = http://localhost:19000
+
+### 외부 API는 Gateway 경유
+### @RequireRole이 붙은 API는 Gateway를 통해 인증 컨텍스트가 전달되어야 함
+@restaurantExternalUrl = http://localhost:19000
+
+
+### 테스트 OWNER 계정
+@ownerLoginId = test10
+@ownerPassword = test124!
+@ownerName = owner10
+@ownerEmail = owner010@naver.com
+@ownerPhone = 010-0000-1008
+
+### 레스토랑 조회 후 아래 변수에 응답값 입력
+@restaurantId = 8b6d1fed-0d5a-4cbd-8fc7-c0b40424eeb1
+@ownerId = fe0df866-5b56-42c6-a062-647c6cd77af2
+
+### OWNER 회원가입
+### 식당 등록 / 코스 등록 테스트용 OWNER 계정 생성
+POST {{authUrl}}/api/v1/users/signup
+Content-Type: application/json
+
+{
+  "loginId": "{{ownerLoginId}}",
+  "password": "{{ownerPassword}}",
+  "name": "{{ownerName}}",
+  "email": "{{ownerEmail}}",
+  "phone": "{{ownerPhone}}",
+  "userRole": "OWNER"
+}
+
+### OWNER 로그인
+### 식당 등록 / 코스 등록에 사용할 OWNER 토큰 발급
+POST {{authUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "{{ownerLoginId}}",
+  "password": "{{ownerPassword}}"
+}
+> {%
+    client.global.clear("ownerToken");
+    let token = null;
+    if (response.body.data && response.body.data.accessToken) {
+        token = response.body.data.accessToken;
+    } else if (response.body.accessToken) {
+        token = response.body.accessToken;
+    }
+    if (token) {
+        client.global.set("ownerToken", token);
+    }
+%}
+
+### 식당 등록
+POST {{restaurantExternalUrl}}/api/v1/restaurants
+Content-Type: application/json
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "MicheLet Dining",
+  "address": "서울특별시 강남구 테헤란로 123",
+  "phone": "02-1234-5678",
+  "description": "파인다이닝 레스토랑",
+  "reservationOpenAt": "10:00:00",
+  "avgMealDurationMin": 90,
+  "status": "OPEN",
+  "businessHours": "MON-FRI 11:00-20:00 / SAT,SUN CLOSED"
+}
+
+
+### 코스 등록
+POST {{restaurantExternalUrl}}/api/v1/restaurants/{{restaurantId}}/courses
+Content-Type: application/json
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Dinner Course",
+  "price": 150000,
+  "sessionType": "DINNER",
+  "status": "AVAILABLE",
+  "menus": [
+    {
+      "coursePart": "MAIN",
+      "menuName": "양갈비",
+      "sortOrder": 4
+    },
+    {
+      "coursePart": "AMUSE_BOUCHE",
+      "menuName": "한우 타르타르",
+      "sortOrder": 1
+    },
+    {
+      "coursePart": "APPETIZER",
+      "menuName": "제철 샐러드",
+      "sortOrder": 2
+    },
+    {
+      "coursePart": "FISH",
+      "menuName": "제철 생선 구이",
+      "sortOrder": 3
+    },
+    {
+      "coursePart": "DESSERT",
+      "menuName": "바닐라 무스",
+      "sortOrder": 5
+    }
+  ]
+}
+
+### 타임슬롯 일괄 생성
+POST {{restaurantUrl}}/api/v1/restaurants/{restaurantId}/time-slots/bulk
+{
+    "startDate": "2026-05-15",
+    "endDate": "2026-05-15",
+    "openTime": "13:00:00",
+    "closeTime": "14:00:00",
+    "intervalMinutes": 30,
+    "capacity": 4
+}
+
+
+###

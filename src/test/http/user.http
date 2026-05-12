@@ -1,7 +1,8 @@
 ### 환경변수 설정
 @gatewayUrl = http://localhost:19000
 # internal은 게이트웨이 거치지 않고 직접 호출
-@internalUrl = http://localhost:19200
+@waitingServiceUrl = http://localhost:19200
+@reservationServiceUrl = http://localhost:19500
 
 
 ### 테스트 USER 계정
@@ -15,7 +16,12 @@
 ### 대기 등록 후 아래 변수에 응답값 입력
 @waitingId = <waitingId>
 @waitingToken = <waitingToken>
-@restaurantId = <restaurantId>
+
+### 레스토랑 조회 후 아래 변수에 응답값 입력
+@restaurantId = 456e7890-e89b-12d3-a456-428914164000
+
+### 예약 조회 후 아래 변수에 응답값 입력
+@reservationId = <reservationId>
 
 ### 스케줄러 실행 후 ACTIVE 전환되면
 ### 대기 순번 조회 응답에서 accessToken 복사
@@ -62,14 +68,20 @@ Content-Type: application/json
 
 
 ### 3. 식당 검색 | 식당 목록 조회
+GET {{gatewayUrl}}/api/v1/restaurants?keyword=MicheLet&region=강남&status=OPEN&page=0&size=10
+Authorization: Bearer {{userToken}}
 
 ### 4. 식당 상세 조회
+GET {{gatewayUrl}}/api/v1/restaurants/{{restaurantId}}
+Authorization: Bearer {{userToken}}
 
 ### 5. 코스 목록 조회
+GET {{gatewayUrl}}/api/v1/restaurants/{{restaurantId}}/courses
+Authorization: Bearer {{userToken}}
 
 ### 6. 예약 캘린더 조회
 
-### 6-1 예약자 많은 경우(부하 발생 시 대기열 진입)
+### 6-1 예약자 많은 경우
 
 ### 6-1-a대기열 입장
 # 응답에서 data.token → @waitingToken 에 입력
@@ -84,7 +96,7 @@ Authorization: Bearer {{userToken}}
 
 ### 6-1-ⅰ 대기 순번 조회
 # 응답에서 data.status 가 ACTIVE가 될 시
-# data.accessToken ( 입장용 토큰 ) -> @waitingAccessToken 에 입력
+# data.accesssToken ( 입장용 토큰 ) -> @waitingAccessToken 에 입력
 GET {{gatewayUrl}}/api/v1/waitings/status?token={{waitingToken}}
 Authorization: Bearer {{userToken}}
 
@@ -95,21 +107,62 @@ Authorization: Bearer {{userToken}}
 ### 6-1-c 스케줄러를 통해 10초마다 입장용 토큰  발급 (자동 처리)
 
 ### 6-2 월간 예약 가능한 날짜 조회
-
+GET {{gatewayUrl}}/api/v1/restaurants/{restaurantId}/time-slots/calendar?targetDate=2036-05-26
+Authorization: Bearer {{userToken}}
 ### 7. 특정 일자의 예약 가능한 타임 슬롯 목록 조회
-
+GET {{gatewayUrl}}/api/v1/restaurants/{restaurantId}/time-slots?targetDate={targetDate}
+Authorization: Bearer {{userToken}}
 ### 8. 예약 시간대 선택  후 예약 진행
 
 ### 8-1 예약 등록 api 호출
+POST {{gatewayUrl}}/api/v1/reservations
+Authorization: Bearer {{userToken}}
+X-Waiting-Token: {{waitingToken}}
+Content-Type: application/json
 
-### 8-1-ⅰ 입장 가능 여부 검증
-GET {{internalUrl}}/internal/waitings/verify-token?token={{waitingAccessToken}}
+{
+  "restaurantId": "{{restaurantId}}",
+  "timeSlotId": "{{timeSlotId}}",
+  "reservedDate": "{{targetDate}}",
+  "slotStartTime": "{{slotStartTime}}",
+  "guestCount": 2,
+  "courses": [
+    {
+      "courseId": "{{courseId}}",
+      "quantity": 2,
+      "unitPrice": {{courseUnitPrice}}
+    }
+  ]
+}
 
-### 8-1-ⅱ 예약 확정 api 호출
+> {%
+    client.test("예약 생성 성공", function() {
+        client.assert(response.status === 201, "Expected 201 Created but got " + response.status);
+        if (response.body && response.body.data) {
+            client.assert(response.body.data.reservationId !== undefined, "reservationId 반환 확인");
+        }
+    });
+    if (response.body && response.body.data) {
+        client.global.set("reservationId", response.body.data.reservationId);
+    }
+%}
 
-### 8-1-ⅲ 예약 완료 후 토큰 삭제
-DELETE {{internalUrl}}/internal/waitings/{{waitingId}}/complete
+### 8-1-ⅰ 입장 가능 여부 검증 (이거는 예약 생성 내부에서 호출 시나리오 상에서 직접 호출 x)
+# GET {{waitingServiceUrl}}/internal/waitings/verify-token?token={{waitingAccessToken}}
 
-### 8-1-ⅳ 예약 완료 알림 ( 비동기 호출 )
+### 8-1-ⅱ 예약 확정 api 호출  (이거는 예약 생성 내부에서 호출 시나리오 상에서 직접 호출 x)
+# {{waitingInternalUrl}}/internal/v1/time-slots/{timeSlotId}/deduct
+
+### 8-1-ⅲ 예약 완료 후 토큰 삭제  (이거는 예약 생성 내부에서 호출 시나리오 상에서 직접 호출 x)
+# DELETE {{waitingServiceUrl}}/internal/waitings/{{waitingId}}/complete
 
 ### 9. 예약 상세 조회
+GET {{gatewayUrl}}/api/v1/reservations/{{reservationId}}
+Authorization: Bearer {{userToken}}
+
+> {%
+    client.test("예약 상세 조회 성공", function() {
+        client.assert(response.status === 200, "Expected 200 OK");
+        client.assert(response.body.data.status === "CONFIRMED", "예약 상태 CONFIRMED 확인");
+    });
+%}
