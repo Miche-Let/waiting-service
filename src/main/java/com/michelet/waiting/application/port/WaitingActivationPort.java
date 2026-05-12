@@ -17,6 +17,12 @@ public interface WaitingActivationPort {
     // 앞에서 N개 토큰 꺼내기 - 스케줄러 activateNextBatch() 에서 호출
     List<String> popNextTokens(UUID restaurantId, int count);
 
+    // 앞에서 N개 토큰 꺼내면서 원래 score 기억
+    List<ScoredToken> popNextTokensWithScore(UUID restaurantId, int count);
+
+    // 원래 score 복구
+    void addWithScore(UUID restaurantId, String token, Long score);
+
     // 대기열에서 제거 - 취소/만료 시 호출
     void remove(UUID restaurantId, String token);
 
