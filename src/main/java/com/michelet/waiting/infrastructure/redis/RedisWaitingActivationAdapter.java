@@ -77,24 +77,9 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
         return count != null ? count : 0L;
     }
 
-    // 앞에서 N개 토큰 꺼내기 - 스케줄러에서 호출
+
+    // 앞에서 N개 socre 포함해서 토큰 꺼내기
     // ZPOPMIN -> score 낮은 순 N개 추출
-    @Override
-    public List<String> popNextTokens(UUID restaurantId, int count) {
-        String key = buildKey(restaurantId);
-        if(count <= 0) return List.of();
-        Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet()
-                .popMin(key, count);
-
-        if (tuples == null || tuples.isEmpty()) return List.of();
-
-        return tuples.stream()
-                .map(ZSetOperations.TypedTuple::getValue)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    // socre 포함해서 토큰 꺼내기
     @Override
     public List<ScoredToken> popNextTokensWithScore(UUID restaurantId, int count) {
         if (count <= 0) return List.of();
