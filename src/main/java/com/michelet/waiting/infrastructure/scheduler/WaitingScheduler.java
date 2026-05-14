@@ -60,22 +60,33 @@ public class WaitingScheduler {
     public void retryPendingOutbox(){
         log.info("[스케줄러] Outbox PENDING 재처리 실행");
 
-        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPending();
+        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPendingOrFailed();
 
         for(WaitingOutbox outbox : pendingList) {
             try{
-                waitingRepository.findByToken(outbox.getToken())
-                        .ifPresent(waiting -> {
-                            if(waiting.getStatus() == WaitingStatus.WAITING){
-                                waiting.activate();
-                                waitingRepository.save(waiting);
-                            }
-                            outbox.markProcessed(LocalDateTime.now());
-                            waitingOutboxRepository.update(outbox);
-                        });
+                var waitingOpt = waitingRepository.findByToken(outbox.getToken());
+
+                if(waitingOpt.isEmpty()){
+                    outbox.markProcessed(LocalDateTime.now());
+                    waitingOutboxRepository.update(outbox);
+                    continue;
+                }
+
+                var waiting = waitingOpt.get();
+
+                if(waiting.getStatus() == WaitingStatus.WAITING){
+                    waiting.activate();
+                    waitingRepository.save(waiting);
+                }
+
+                outbox.markProcessed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+
             }catch (Exception e){
                 log.error("[스케줄러] Outbox 재처리 실패 - outboxId: {}",
                         outbox.getOutboxId(), e);
+                outbox.markFailed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
             }
         }
     }
