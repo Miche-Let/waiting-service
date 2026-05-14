@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS waiting_service.p_waiting_outbox
     );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_waiting_active_unique
-    ON p_waiting_queue (user_id, restaurant_id)
+    ON waiting_service.p_waiting_queue (user_id, restaurant_id)
     WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_waiting_restaurant_status
