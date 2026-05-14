@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -148,7 +149,7 @@ public class WaitingService {
                                     restaurantId,
                                     scoredToken.score()
                             );
-                            waitingOutboxRepository.save(outbox);
+                            saveOutbox(outbox);
 
                             // 2. DB ACTIVE 전환
                             waiting.activate();
@@ -159,11 +160,6 @@ public class WaitingService {
                             waitingOutboxRepository.save(outbox);
                         });
             }catch (Exception e){
-                if(e instanceof InterruptedException){
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-
                 // 4. DB 저장 실패 시 원래 score로 Redis 복구
                 waitingActivationPort.addWithScore(
                         restaurantId,
@@ -186,5 +182,10 @@ public class WaitingService {
             waitingRepository.save(waiting);
             waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
         });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveOutbox(WaitingOutbox outbox) {
+        waitingOutboxRepository.save(outbox);
     }
 }
