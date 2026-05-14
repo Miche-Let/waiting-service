@@ -161,7 +161,7 @@ public class WaitingService {
                                     restaurantId,
                                     scoredToken.score()
                             );
-                            processedOutbox.markProcessed();
+                            processedOutbox.markProcessed(LocalDateTime.now());
                             waitingOutboxRepository.save(processedOutbox);
 
                         });
@@ -179,7 +179,7 @@ public class WaitingService {
                 );
 
                 // 5. Outbox FAILED 기록
-                outbox.markFailed();
+                outbox.markFailed(LocalDateTime.now());
                 waitingOutboxRepository.save(outbox);
 
                 log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복구 - token : {}",

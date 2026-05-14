@@ -37,16 +37,13 @@ public class WaitingOutbox {
         return outbox;
     }
 
-    public void markProcessed () {
+    public void markProcessed (LocalDateTime processedAt) {
         this.status = OutboxStatus.PROCESSED;
-        this.processedAt = LocalDateTime.now();
+        this.processedAt = processedAt;
     }
-    public void markFailed() {
+    public void markFailed(LocalDateTime processedAt) {
         this.status = OutboxStatus.FAILED;
-        this.processedAt = LocalDateTime.now();
-    }
-    public boolean isPending() {
-        return OutboxStatus.PENDING == status;
+        this.processedAt = processedAt;
     }
 
 }

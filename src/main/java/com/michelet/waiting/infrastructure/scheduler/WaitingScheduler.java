@@ -5,6 +5,7 @@ import com.michelet.waiting.domain.entity.WaitingOutbox;
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -69,7 +70,7 @@ public class WaitingScheduler {
                                 waiting.activate();
                                 waitingRepository.save(waiting);
                             }
-                            outbox.markProcessed();
+                            outbox.markProcessed(LocalDateTime.now());
                             waitingOutboxRepository.update(outbox);
                         });
             }catch (Exception e){
