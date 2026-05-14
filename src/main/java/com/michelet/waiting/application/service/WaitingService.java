@@ -137,33 +137,26 @@ public class WaitingService {
         List<ScoredToken> scoredTokens = waitingActivationPort.popNextTokensWithScore(restaurantId,batchSize);
 
         for(ScoredToken scoredToken : scoredTokens){
-
-            // 1. Outbox 에 PENDING 이벤트 기록
-            WaitingOutbox outbox = WaitingOutbox.create(
-                    null,
-                    scoredToken.token(),
-                    restaurantId,
-                    scoredToken.score()
-            );
-
             try{
                 waitingRepository.findByToken(scoredToken.token())
                         .ifPresent(waiting -> {
 
-                            // 2. DB ACTIVE 전환
-                            waiting.activate();
-                            waitingRepository.save(waiting);
-
-                            // 3. Outbox PROCESSED 기록
-                            WaitingOutbox processedOutbox = WaitingOutbox.create(
+                            // 1. Outbox PENDING 생성 + 저장 (waitingId 포함)
+                            WaitingOutbox outbox = WaitingOutbox.create(
                                     waiting.getId(),
                                     scoredToken.token(),
                                     restaurantId,
                                     scoredToken.score()
                             );
-                            processedOutbox.markProcessed(LocalDateTime.now());
-                            waitingOutboxRepository.save(processedOutbox);
+                            waitingOutboxRepository.save(outbox);
 
+                            // 2. DB ACTIVE 전환
+                            waiting.activate();
+                            waitingRepository.save(waiting);
+
+                            // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
+                            outbox.markProcessed(LocalDateTime.now());
+                            waitingOutboxRepository.save(outbox);
                         });
             }catch (Exception e){
                 if(e instanceof InterruptedException){
@@ -177,10 +170,6 @@ public class WaitingService {
                         scoredToken.token(),
                         scoredToken.score()
                 );
-
-                // 5. Outbox FAILED 기록
-                outbox.markFailed(LocalDateTime.now());
-                waitingOutboxRepository.save(outbox);
 
                 log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복구 - token : {}",
                         scoredToken.token(),e);
