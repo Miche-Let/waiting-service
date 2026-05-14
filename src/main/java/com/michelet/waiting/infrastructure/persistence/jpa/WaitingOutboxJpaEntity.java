@@ -62,7 +62,8 @@ public class WaitingOutboxJpaEntity extends BaseEntity {
                 token,
                 restaurantId,
                 score,
-                status
+                status,
+                processedAt
         );
     }
 }

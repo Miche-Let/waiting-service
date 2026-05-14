@@ -30,10 +30,12 @@ public class WaitingOutbox {
     }
 
     public static WaitingOutbox restore(UUID outboxId, UUID waitingId, String token,
-                                        UUID restaurantId, Long score, OutboxStatus status){
+                                        UUID restaurantId, Long score, OutboxStatus status,
+                                        LocalDateTime processedAt){
         WaitingOutbox outbox = new WaitingOutbox(
                 outboxId, waitingId, token, restaurantId, score,status
         );
+        outbox.processedAt = processedAt;
         return outbox;
     }
 
