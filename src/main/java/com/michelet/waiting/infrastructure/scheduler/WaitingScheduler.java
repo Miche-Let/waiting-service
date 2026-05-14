@@ -60,7 +60,7 @@ public class WaitingScheduler {
     public void retryPendingOutbox(){
         log.info("[스케줄러] Outbox PENDING 재처리 실행");
 
-        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPendingOrFailed();
+        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPending();
 
         for(WaitingOutbox outbox : pendingList) {
             try{

@@ -5,6 +5,6 @@ import java.util.List;
 
 public interface WaitingOutboxRepository {
     void save(WaitingOutbox outbox);
-    List<WaitingOutbox> findPendingOrFailed();
+    List<WaitingOutbox> findPending();
     void update(WaitingOutbox outbox);
 }
