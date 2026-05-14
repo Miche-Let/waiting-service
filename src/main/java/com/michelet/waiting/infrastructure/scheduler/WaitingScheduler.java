@@ -55,11 +55,11 @@ public class WaitingScheduler {
     }
 
     // PENDING 상태 Outbox 재처리
-    @Scheduled(fixedDelayString = "${waiting.outbox-retry-delay-ms:30000")
+    @Scheduled(fixedDelayString = "${waiting.outbox-retry-delay-ms:30000}")
     public void retryPendingOutbox(){
         log.info("[스케줄러] Outbox PENDING 재처리 실행");
 
-        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPending();
+        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPendingOrFailed();
 
         for(WaitingOutbox outbox : pendingList) {
             try{
