@@ -5,6 +5,8 @@ import com.michelet.waiting.domain.entity.WaitingOutbox;
 import com.michelet.waiting.domain.enums.OutboxStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -35,6 +37,7 @@ public class WaitingOutboxJpaEntity extends BaseEntity {
     @Column(name = "score", nullable = false)
     private Long score;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private OutboxStatus status;
 
