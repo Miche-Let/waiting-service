@@ -12,6 +12,7 @@ import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
 import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
+import com.michelet.waiting.infrastructure.persistence.jpa.WaitingOutboxSaver;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -19,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -30,6 +30,7 @@ public class WaitingService {
     private final WaitingRepository waitingRepository;
     private final WaitingOutboxRepository waitingOutboxRepository;
     private final WaitingActivationPort waitingActivationPort;
+    private final WaitingOutboxSaver waitingOutboxSaver;
 
     @Value("${waiting.activate-ratio:0.1}")
     private double activateRatio;
@@ -159,7 +160,7 @@ public class WaitingService {
                                     restaurantId,
                                     scoredToken.score()
                             );
-                            saveOutbox(outbox);
+                            waitingOutboxSaver.save(outbox);
 
                             // 2. DB ACTIVE 전환
                             waiting.activate();
@@ -168,7 +169,6 @@ public class WaitingService {
                             // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
                             outbox.markProcessed(LocalDateTime.now());
                             waitingOutboxRepository.save(outbox);
-                        });
             }catch (Exception e){
                 // 4. DB 저장 실패 시 원래 score로 Redis 복구
                 waitingActivationPort.addWithScore(
@@ -194,8 +194,4 @@ public class WaitingService {
         });
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveOutbox(WaitingOutbox outbox) {
-        waitingOutboxRepository.save(outbox);
-    }
 }
