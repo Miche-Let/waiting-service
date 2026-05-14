@@ -88,11 +88,11 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
                 .popMin(buildKey(restaurantId), count);
         if (tuples == null || tuples.isEmpty()) return List.of();
         return tuples.stream()
+                .filter(t -> t.getValue() != null && t.getScore() != null)
                 .map(t -> new ScoredToken(
                         t.getValue(),
                         t.getScore().longValue()
                 ))
-                .filter(s -> s.token() != null)
                 .toList();
     }
 
