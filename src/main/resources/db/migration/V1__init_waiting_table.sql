@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS waiting_service.p_waiting_outbox
     restaurant_id UUID         NOT NULL,
     score         BIGINT       NOT NULL,
     status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING'
-        CHECK (status IN ('PENDING', 'PROCESSED')),
+    CHECK (status IN ('PENDING', 'PROCESSED', 'FAILED')),
     processed_at  TIMESTAMP,
     created_at    TIMESTAMP    NOT NULL,
     created_by    UUID,

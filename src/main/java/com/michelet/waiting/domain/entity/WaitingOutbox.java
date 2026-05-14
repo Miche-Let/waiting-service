@@ -44,4 +44,9 @@ public class WaitingOutbox {
         this.processedAt = processedAt;
     }
 
+    public void markFailed (LocalDateTime processedAt) {
+        this.status = OutboxStatus.FAILED;
+        this.processedAt = processedAt;
+    }
+
 }
