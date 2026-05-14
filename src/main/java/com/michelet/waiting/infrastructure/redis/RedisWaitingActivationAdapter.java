@@ -113,6 +113,7 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
 
     @Override
     public void addWithScore(UUID restaurantId, String token, Long score) {
+        validateToken(token);
         redisTemplate.opsForZSet()
                 .add(buildKey(restaurantId), token, score);
     }
