@@ -29,6 +29,14 @@ public class WaitingOutbox {
         );
     }
 
+    public static WaitingOutbox restore(UUID outboxId, UUID waitingId, String token,
+                                        UUID restaurantId, Long score, OutboxStatus status){
+        WaitingOutbox outbox = new WaitingOutbox(
+                outboxId, waitingId, token, restaurantId, score,status
+        );
+        return outbox;
+    }
+
     public void markProcessed () {
         this.status = OutboxStatus.PROCESSED;
         this.processedAt = LocalDateTime.now();

@@ -55,12 +55,14 @@ public class WaitingOutboxJpaEntity extends BaseEntity {
         e.processedAt = outbox.getProcessedAt();
         return e;
     }
-    public WaitingOutbox toDomain(){
-        WaitingOutbox outbox = WaitingOutbox.create(
-                waitingId, token, restaurantId, score
+    public WaitingOutbox toDomain() {
+        return WaitingOutbox.restore(
+                outboxId,
+                waitingId,
+                token,
+                restaurantId,
+                score,
+                status
         );
-        if(OutboxStatus.PROCESSED == status)outbox.markProcessed();
-        if(OutboxStatus.FAILED == status)outbox.markFailed();
-        return outbox;
     }
 }
