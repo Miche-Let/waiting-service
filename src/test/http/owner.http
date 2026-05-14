@@ -2,9 +2,6 @@
 ### 인증/회원가입/로그인은 Gateway 경유
 @authUrl = http://localhost:19000
 
-### 외부 API는 Gateway 경유
-### @RequireRole이 붙은 API는 Gateway를 통해 인증 컨텍스트가 전달되어야 함
-@restaurantExternalUrl = http://localhost:19000
 
 
 ### 테스트 OWNER 계정
@@ -55,7 +52,7 @@ Content-Type: application/json
 %}
 
 ### 식당 등록
-POST {{restaurantExternalUrl}}/api/v1/restaurants
+POST {{authUrl}}/api/v1/restaurants
 Content-Type: application/json
 Authorization: Bearer {{ownerToken}}
 
@@ -72,7 +69,7 @@ Authorization: Bearer {{ownerToken}}
 
 
 ### 코스 등록
-POST {{restaurantExternalUrl}}/api/v1/restaurants/{{restaurantId}}/courses
+POST {{authUrl}}/api/v1/restaurants/{{restaurantId}}/courses
 Content-Type: application/json
 Authorization: Bearer {{ownerToken}}
 
@@ -110,8 +107,11 @@ Authorization: Bearer {{ownerToken}}
   ]
 }
 
+
 ### 타임슬롯 일괄 생성
-POST {{restaurantUrl}}/api/v1/restaurants/{restaurantId}/time-slots/bulk
+POST {{authUrl}}/api/v1/restaurants/{restaurantId}/time-slots/bulk
+Content-Type: application/json
+Authorization: Bearer {{ownerToken}}
 {
     "startDate": "2026-05-15",
     "endDate": "2026-05-15",
