@@ -1,5 +1,6 @@
 package com.michelet.waiting;
 
+import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +21,9 @@ class WaitingApplicationTests {
 
 	@MockBean
 	JPAQueryFactory jpaQueryFactory;
+
+	@MockBean
+	WaitingOutboxRepository waitingOutboxRepository;
 
 	@Test
 	void contextLoads() {}

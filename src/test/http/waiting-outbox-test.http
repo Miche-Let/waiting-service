@@ -1,0 +1,96 @@
+
+### 공통 변수
+@gatewayUrl = http://localhost:19000
+# internal은 게이트웨이 거치지 않고 직접 호출
+@waitingServiceUrl = http://localhost:19200
+@reservationServiceUrl = http://localhost:19500
+
+
+### 테스트 USER 계정
+@userLoginId = test9
+@userPassword = test123!
+@userName = user9
+@userEmail = user009@naver.com
+@userPhone = 010-1000-2006
+
+
+### 대기 등록 후 아래 변수에 응답값 입력
+@waitingId = <waitingId>
+@waitingToken = <waitingToken>
+
+### 레스토랑 조회 후 아래 변수에 응답값 입력
+@restaurantId = 456e7890-e89b-12d3-a456-428914164007
+
+### 예약 조회 후 아래 변수에 응답값 입력
+@reservationId = <reservationId>
+
+### 스케줄러 실행 후 ACTIVE 전환되면
+### 대기 순번 조회 응답에서 accessToken 복사
+@waitingAccessToken = <waitingAccessToken>
+
+
+### 1. USER 회원가입
+POST {{gatewayUrl}}/api/v1/users/signup
+Content-Type: application/json
+
+{
+  "loginId": "{{userLoginId}}",
+  "password": "{{userPassword}}",
+  "name": "{{userName}}",
+  "email": "{{userEmail}}",
+  "phone": "{{userPhone}}",
+  "userRole": "USER"
+}
+
+
+### 2. USER 로그인
+POST {{gatewayUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "{{userLoginId}}",
+  "password": "{{userPassword}}"
+}
+
+> {%
+    client.global.clear("userToken");
+    let token = null;
+    if (response.body.data && response.body.data.accessToken) {
+        token = response.body.data.accessToken;
+    } else if (response.body.data && response.body.data.token) {
+        token = response.body.data.token;
+    } else if (response.body.accessToken) {
+        token = response.body.accessToken;
+    }
+    if (token) {
+        client.global.set("userToken", token);
+    }
+%}
+
+### 3. 대기 등록
+POST {{gatewayUrl}}/api/v1/waitings
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "restaurantId": "{{restaurantId}}"
+}
+
+###
+
+### ====================================
+### 2. Outbox 테이블 확인 (DB에서 직접 확인)
+### ====================================
+# Docker Desktop Exec에서 실행
+# SELECT * FROM waiting_service.p_waiting_outbox;
+# → status = PENDING / PROCESSED / FAILED 확인
+
+### ====================================
+### 3. Redis 순번 확인
+### ====================================
+# Docker Desktop Exec에서 실행
+# redis-cli
+# ZRANGE waiting:queue:{restaurantId} 0 -1 WITHSCORES
+# → 원래 score로 복구됐는지 확인
+
+###
