@@ -182,7 +182,7 @@ public class WaitingService {
                 outbox.markFailed();
                 waitingOutboxRepository.save(outbox);
 
-                log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복수 - token : {}",
+                log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복구 - token : {}",
                         scoredToken.token(),e);
             }
         }
