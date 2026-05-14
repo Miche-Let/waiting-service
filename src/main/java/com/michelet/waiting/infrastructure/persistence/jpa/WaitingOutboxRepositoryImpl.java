@@ -19,8 +19,10 @@ public class WaitingOutboxRepositoryImpl implements WaitingOutboxRepository {
     }
 
     @Override
-    public List<WaitingOutbox> findPending() {
-        return jpa.findByStatus(OutboxStatus.PENDING)
+    public List<WaitingOutbox> findPendingOrFailed() {
+        return jpa.findByStatusIn(
+                List.of(OutboxStatus.PENDING, OutboxStatus.FAILED)
+                )
                 .stream()
                 .map(WaitingOutboxJpaEntity::toDomain)
                 .toList();

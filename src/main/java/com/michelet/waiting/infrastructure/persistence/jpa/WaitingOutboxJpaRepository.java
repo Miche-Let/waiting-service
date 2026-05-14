@@ -6,6 +6,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WaitingOutboxJpaRepository extends JpaRepository<WaitingOutboxJpaEntity, UUID> {
-    List<WaitingOutboxJpaEntity> findByStatus(OutboxStatus status);
+    List<WaitingOutboxJpaEntity> findByStatusIn(List<OutboxStatus> statuses);
 
 }
