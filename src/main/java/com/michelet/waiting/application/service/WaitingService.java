@@ -171,7 +171,7 @@ public class WaitingService {
                     break;
                 }
 
-                // 4. DB 저장 실패 시 원래 score로 Redis 복수
+                // 4. DB 저장 실패 시 원래 score로 Redis 복구
                 waitingActivationPort.addWithScore(
                         restaurantId,
                         scoredToken.token(),
