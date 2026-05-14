@@ -139,8 +139,18 @@ public class WaitingService {
 
         for(ScoredToken scoredToken : scoredTokens){
             try{
-                waitingRepository.findByToken(scoredToken.token())
-                        .ifPresent(waiting -> {
+                Waiting waiting = waitingRepository.findByToken(scoredToken.token())
+                        .orElseThrow(() -> {
+                            // 토큰이 DB에 없으면 Redis 복구
+                            waitingActivationPort.addWithScore(
+                                    restaurantId,
+                                    scoredToken.token(),
+                                    scoredToken.score()
+                            );
+                            log.warn("[스케줄러] 토큰 {} 에 해당하는 대기 엔티티 없음 - Redis 복구",
+                                    scoredToken.token());
+                            return new WaitingException(WaitingErrorCode.NOT_FOUND);
+                        });
 
                             // 1. Outbox PENDING 생성 + 저장 (waitingId 포함)
                             WaitingOutbox outbox = WaitingOutbox.create(
