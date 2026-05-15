@@ -1,11 +1,9 @@
 package com.michelet.waiting.infrastructure.scheduler;
 
+import com.michelet.waiting.application.port.WaitingActivationPort;
 import com.michelet.waiting.application.service.WaitingService;
-import com.michelet.waiting.domain.entity.WaitingOutbox;
-import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +19,7 @@ public class WaitingScheduler {
     private final WaitingService waitingService;
     private final WaitingRepository waitingRepository;
     private final WaitingOutboxRepository waitingOutboxRepository;
+    private final WaitingActivationPort waitingActivationPort;
 
     // N명씩 입장 허용
     // 모든 식당의 대기열을 순회하며 10% 인원 활성화
@@ -59,37 +58,7 @@ public class WaitingScheduler {
     @Scheduled(fixedDelayString = "${waiting.outbox-retry-delay-ms:30000}")
     public void retryPendingOutbox(){
         log.info("[스케줄러] Outbox PENDING 재처리 실행");
-
-        List<WaitingOutbox> pendingList = waitingOutboxRepository.findPendingOrFailed();
-
-        for(WaitingOutbox outbox : pendingList) {
-            try{
-                var waitingOpt = waitingRepository.findByToken(outbox.getToken());
-
-                if(waitingOpt.isEmpty()){
-                    outbox.markProcessed(LocalDateTime.now());
-                    waitingOutboxRepository.update(outbox);
-                    continue;
-                }
-
-                var waiting = waitingOpt.get();
-
-                if(waiting.getStatus() == WaitingStatus.WAITING){
-                    waiting.activate();
-                    waitingRepository.save(waiting);
-                }
-
-                outbox.markProcessed(LocalDateTime.now());
-                waitingOutboxRepository.update(outbox);
-
-            }catch (Exception e){
-                log.error("[스케줄러] Outbox 재처리 실패 - outboxId: {}",
-                        outbox.getOutboxId(), e);
-                outbox.markFailed(LocalDateTime.now());
-                waitingOutboxRepository.update(outbox);
-            }
-        }
+        waitingService.retryPendingOutbox();
     }
-
 
 }

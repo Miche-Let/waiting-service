@@ -15,6 +15,7 @@ import com.michelet.waiting.domain.repository.WaitingRepository;
 import com.michelet.waiting.infrastructure.persistence.jpa.WaitingOutboxSaver;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -192,6 +193,45 @@ public class WaitingService {
             waitingRepository.save(waiting);
             waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
         });
+    }
+
+    public void retryPendingOutbox(){
+
+        List<WaitingOutbox> pendingList =
+                waitingOutboxRepository.findPendingOrFailed();
+
+        for (WaitingOutbox outbox : pendingList) {
+            try {
+                Optional<Waiting> waitingOpt =
+                        waitingRepository.findByToken(outbox.getToken());
+
+                if (waitingOpt.isEmpty()) {
+                    outbox.markProcessed(LocalDateTime.now());
+                    waitingOutboxRepository.update(outbox);
+                    continue;
+                }
+
+                Waiting waiting = waitingOpt.get();
+
+                if (waiting.getStatus() == WaitingStatus.WAITING) {
+                    waitingActivationPort.remove(
+                            outbox.getRestaurantId(),
+                            outbox.getToken()
+                    );
+                    waiting.activate();
+                    waitingRepository.save(waiting);
+                }
+
+                outbox.markProcessed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+
+            } catch (Exception e) {
+                log.error("[스케줄러] Outbox 재처리 실패 - outboxId: {}",
+                        outbox.getOutboxId(), e);
+                outbox.markFailed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+            }
+        }
     }
 
 }
