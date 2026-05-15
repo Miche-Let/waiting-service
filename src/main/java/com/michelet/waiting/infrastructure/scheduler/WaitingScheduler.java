@@ -1,8 +1,6 @@
 package com.michelet.waiting.infrastructure.scheduler;
 
-import com.michelet.waiting.application.port.WaitingActivationPort;
 import com.michelet.waiting.application.service.WaitingService;
-import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
 import java.util.List;
 import java.util.UUID;
@@ -18,8 +16,6 @@ public class WaitingScheduler {
 
     private final WaitingService waitingService;
     private final WaitingRepository waitingRepository;
-    private final WaitingOutboxRepository waitingOutboxRepository;
-    private final WaitingActivationPort waitingActivationPort;
 
     // N명씩 입장 허용
     // 모든 식당의 대기열을 순회하며 10% 인원 활성화
