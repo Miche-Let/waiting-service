@@ -141,35 +141,35 @@ public class WaitingService {
 
         for(ScoredToken scoredToken : scoredTokens){
             try{
-                Waiting waiting = waitingRepository.findByToken(scoredToken.token())
-                        .orElseThrow(() -> {
-                            // 토큰이 DB에 없으면 Redis 복구
-                            waitingActivationPort.addWithScore(
-                                    restaurantId,
-                                    scoredToken.token(),
-                                    scoredToken.score()
-                            );
-                            log.warn("[스케줄러] 토큰 {} 에 해당하는 대기 엔티티 없음 - Redis 복구",
-                                    scoredToken.token());
-                            return new WaitingException(WaitingErrorCode.NOT_FOUND);
-                        });
+                Optional<Waiting> waitingOpt = waitingRepository.findByToken(scoredToken.token());
+                if (waitingOpt.isEmpty()) {
+                    // 토큰이 DB에 없으면 Redis 복구 후 다음 토큰으로
+                    waitingActivationPort.addWithScore(
+                            restaurantId,
+                            scoredToken.token(),
+                            scoredToken.score()
+                    );
+                    log.warn("[스케줄러] 토큰 {} 에 해당하는 대기 엔티티 없음 - Redis 복구",
+                            scoredToken.token());
+                    continue;
+                }
+                Waiting waiting = waitingOpt.get();
+                // 1. Outbox PENDING 생성 + 저장 (waitingId 포함)
+                WaitingOutbox outbox = WaitingOutbox.create(
+                        waiting.getId(),
+                        scoredToken.token(),
+                        restaurantId,
+                        scoredToken.score()
+                );
+                waitingOutboxSaver.save(outbox);
 
-                            // 1. Outbox PENDING 생성 + 저장 (waitingId 포함)
-                            WaitingOutbox outbox = WaitingOutbox.create(
-                                    waiting.getId(),
-                                    scoredToken.token(),
-                                    restaurantId,
-                                    scoredToken.score()
-                            );
-                            waitingOutboxSaver.save(outbox);
+                // 2. DB ACTIVE 전환
+                waiting.activate();
+                waitingRepository.save(waiting);
 
-                            // 2. DB ACTIVE 전환
-                            waiting.activate();
-                            waitingRepository.save(waiting);
-
-                            // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
-                            outbox.markProcessed(LocalDateTime.now());
-                            waitingOutboxRepository.update(outbox);
+                // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
+                outbox.markProcessed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
             }catch (Exception e){
                 // 4. DB 저장 실패 시 원래 score로 Redis 복구
                 waitingActivationPort.addWithScore(
