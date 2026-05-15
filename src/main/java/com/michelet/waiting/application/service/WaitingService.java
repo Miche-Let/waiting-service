@@ -206,6 +206,8 @@ public class WaitingService {
                         waitingRepository.findByToken(outbox.getToken());
 
                 if (waitingOpt.isEmpty()) {
+                    log.warn("[스케줄러] Outbox 재처리 - 토큰 {} 에 해당하는 대기 엔티티 없음",
+                            outbox.getToken());
                     outbox.markProcessed(LocalDateTime.now());
                     waitingOutboxRepository.update(outbox);
                     continue;
