@@ -41,6 +41,9 @@ public class WaitingOutboxJpaEntity extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private OutboxStatus status;
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
 
@@ -52,6 +55,7 @@ public class WaitingOutboxJpaEntity extends BaseEntity {
         e.restaurantId = outbox.getRestaurantId();
         e.score = outbox.getScore();
         e.status = outbox.getStatus();
+        e.retryCount  = outbox.getRetryCount();
         e.processedAt = outbox.getProcessedAt();
         return e;
     }
@@ -63,6 +67,7 @@ public class WaitingOutboxJpaEntity extends BaseEntity {
                 restaurantId,
                 score,
                 status,
+                retryCount,
                 processedAt
         );
     }

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS waiting_service.p_waiting_outbox
     score         BIGINT       NOT NULL,
     status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING'
     CHECK (status IN ('PENDING', 'PROCESSED', 'FAILED')),
+    retry_count   INT          NOT NULL DEFAULT 0,
     processed_at  TIMESTAMP,
     created_at    TIMESTAMP    NOT NULL,
     created_by    UUID,

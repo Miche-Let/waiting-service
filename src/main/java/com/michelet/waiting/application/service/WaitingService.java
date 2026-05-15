@@ -39,6 +39,9 @@ public class WaitingService {
     @Value("${waiting.expire-minutes:10}")
     private int expireMinutes;
 
+    @Value("${waiting.outbox-max-retry:5}")
+    private int outboxMaxRetry;
+
     private static final UUID SYSTEM_UUID =
             UUID.fromString("00000000-0000-0000-0000-000000000001");
 
@@ -201,6 +204,14 @@ public class WaitingService {
                 waitingOutboxRepository.findPendingOrFailed();
 
         for (WaitingOutbox outbox : pendingList) {
+            // 재시도 한계 초과 시 ABANDONED 처리
+            if (outbox.isExceededRetryLimit(outboxMaxRetry)) {
+                log.error("[스케줄러] Outbox 재시도 한계 초과 ABANDONED - outboxId: {}",
+                        outbox.getOutboxId());
+                outbox.markAbandoned(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+                continue;
+            }
             try {
                 Optional<Waiting> waitingOpt =
                         waitingRepository.findByToken(outbox.getToken());

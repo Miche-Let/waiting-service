@@ -15,3 +15,4 @@ waiting:
   expire-scheduler-delay-ms: 60000
   expire-minutes: 10
   outbox-retry-delay-ms: 30000
+  outbox-max-retry: 5
