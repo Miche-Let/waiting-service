@@ -169,7 +169,7 @@ public class WaitingService {
 
                             // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
                             outbox.markProcessed(LocalDateTime.now());
-                            waitingOutboxRepository.save(outbox);
+                            waitingOutboxRepository.update(outbox);
             }catch (Exception e){
                 // 4. DB 저장 실패 시 원래 score로 Redis 복구
                 waitingActivationPort.addWithScore(
