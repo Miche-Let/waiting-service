@@ -31,11 +31,6 @@ public class WaitingScheduler {
             try {
                 waitingService.activateNextBatch(restaurantId);
             } catch (Exception e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                    log.warn("[스케줄러] activateNextBatch 인터럽트 - restaurantId: {}", restaurantId, e);
-                    break;
-                }
                 log.warn("[스케줄러] activateNextBatch 실패 - restaurantId: {}", restaurantId, e);
             }
         }
@@ -47,9 +42,6 @@ public class WaitingScheduler {
         try {
             waitingService.expireWaitings();
         }catch (Exception e){
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
             log.error("[스케줄러] expireWaitings 실패", e);
         }
     }
