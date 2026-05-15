@@ -2,13 +2,12 @@ package com.michelet.waiting.infrastructure.scheduler;
 
 import com.michelet.waiting.application.service.WaitingService;
 import com.michelet.waiting.domain.repository.WaitingRepository;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -28,28 +27,26 @@ public class WaitingScheduler {
             try {
                 waitingService.activateNextBatch(restaurantId);
             } catch (Exception e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                    log.warn("[스케줄러] activateNextBatch 인터럽트 - restaurantId: {}", restaurantId, e);
-                    break;
-                }
                 log.warn("[스케줄러] activateNextBatch 실패 - restaurantId: {}", restaurantId, e);
             }
         }
     }
     // 만료 처리
-    @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:10000}")
+    @Scheduled(fixedDelayString = "${waiting.expire-scheduler-delay-ms:60000}")
     public void expireWaitings(){
         log.info("[스케줄러] expireWaitings 실행");
         try {
             waitingService.expireWaitings();
         }catch (Exception e){
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
             log.error("[스케줄러] expireWaitings 실패", e);
         }
     }
 
+    // PENDING 상태 Outbox 재처리
+    @Scheduled(fixedDelayString = "${waiting.outbox-retry-delay-ms:30000}")
+    public void retryPendingOutbox(){
+        log.info("[스케줄러] Outbox PENDING 재처리 실행");
+        waitingService.retryPendingOutbox();
+    }
 
 }

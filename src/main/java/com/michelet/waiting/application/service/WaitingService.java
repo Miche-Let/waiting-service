@@ -3,33 +3,44 @@ package com.michelet.waiting.application.service;
 import com.michelet.waiting.application.dto.EnterWaitingCommand;
 import com.michelet.waiting.application.dto.GetWaitingStatusQuery;
 import com.michelet.waiting.application.dto.WaitingResult;
+import com.michelet.waiting.application.port.ScoredToken;
 import com.michelet.waiting.application.port.WaitingActivationPort;
 import com.michelet.waiting.domain.entity.Waiting;
+import com.michelet.waiting.domain.entity.WaitingOutbox;
 import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
+import com.michelet.waiting.domain.repository.WaitingOutboxRepository;
 import com.michelet.waiting.domain.repository.WaitingRepository;
+import com.michelet.waiting.infrastructure.persistence.jpa.WaitingOutboxSaver;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class WaitingService {
     private final WaitingRepository waitingRepository;
+    private final WaitingOutboxRepository waitingOutboxRepository;
     private final WaitingActivationPort waitingActivationPort;
+    private final WaitingOutboxSaver waitingOutboxSaver;
 
     @Value("${waiting.activate-ratio:0.1}")
     private double activateRatio;
 
     @Value("${waiting.expire-minutes:10}")
     private int expireMinutes;
+
+    @Value("${waiting.outbox-max-retry:5}")
+    private int outboxMaxRetry;
 
     private static final UUID SYSTEM_UUID =
             UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -129,14 +140,51 @@ public class WaitingService {
 
         int batchSize = (int) Math.max(1, Math.round(totalWaiting * activateRatio));
 
-        List<String> tokens = waitingActivationPort.popNextTokens(restaurantId, batchSize);
+        List<ScoredToken> scoredTokens = waitingActivationPort.popNextTokensWithScore(restaurantId,batchSize);
 
+        for(ScoredToken scoredToken : scoredTokens){
+            try{
+                Optional<Waiting> waitingOpt = waitingRepository.findByToken(scoredToken.token());
+                if (waitingOpt.isEmpty()) {
+                    // 토큰이 DB에 없으면 Redis 복구 후 다음 토큰으로
+                    waitingActivationPort.addWithScore(
+                            restaurantId,
+                            scoredToken.token(),
+                            scoredToken.score()
+                    );
+                    log.warn("[스케줄러] 토큰 {} 에 해당하는 대기 엔티티 없음 - Redis 복구",
+                            scoredToken.token());
+                    continue;
+                }
+                Waiting waiting = waitingOpt.get();
+                // 1. Outbox PENDING 생성 + 저장 (waitingId 포함)
+                WaitingOutbox outbox = WaitingOutbox.create(
+                        waiting.getId(),
+                        scoredToken.token(),
+                        restaurantId,
+                        scoredToken.score()
+                );
+                waitingOutboxSaver.save(outbox);
 
-        tokens.forEach(token ->
-                waitingRepository.findByToken(token).ifPresent(waiting -> {
-                    waiting.activate();
-                    waitingRepository.save(waiting);
-                }));
+                // 2. DB ACTIVE 전환
+                waiting.activate();
+                waitingRepository.save(waiting);
+
+                // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
+                outbox.markProcessed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+            }catch (Exception e){
+                // 4. DB 저장 실패 시 원래 score로 Redis 복구
+                waitingActivationPort.addWithScore(
+                        restaurantId,
+                        scoredToken.token(),
+                        scoredToken.score()
+                );
+
+                log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복구 - token : {}",
+                        scoredToken.token(),e);
+            }
+        }
     }
 
     // 스케줄러 - 만료 처리
@@ -149,4 +197,54 @@ public class WaitingService {
             waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
         });
     }
+
+    public void retryPendingOutbox(){
+
+        List<WaitingOutbox> pendingList =
+                waitingOutboxRepository.findPendingOrFailed();
+
+        for (WaitingOutbox outbox : pendingList) {
+            // 재시도 한계 초과 시 ABANDONED 처리
+            if (outbox.isExceededRetryLimit(outboxMaxRetry)) {
+                log.error("[스케줄러] Outbox 재시도 한계 초과 ABANDONED - outboxId: {}",
+                        outbox.getOutboxId());
+                outbox.markAbandoned(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+                continue;
+            }
+            try {
+                Optional<Waiting> waitingOpt =
+                        waitingRepository.findByToken(outbox.getToken());
+
+                if (waitingOpt.isEmpty()) {
+                    log.warn("[스케줄러] Outbox 재처리 - 토큰 {} 에 해당하는 대기 엔티티 없음",
+                            outbox.getToken());
+                    outbox.markProcessed(LocalDateTime.now());
+                    waitingOutboxRepository.update(outbox);
+                    continue;
+                }
+
+                Waiting waiting = waitingOpt.get();
+
+                if (waiting.getStatus() == WaitingStatus.WAITING) {
+                    waitingActivationPort.remove(
+                            outbox.getRestaurantId(),
+                            outbox.getToken()
+                    );
+                    waiting.activate();
+                    waitingRepository.save(waiting);
+                }
+
+                outbox.markProcessed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+
+            } catch (Exception e) {
+                log.error("[스케줄러] Outbox 재처리 실패 - outboxId: {}",
+                        outbox.getOutboxId(), e);
+                outbox.markFailed(LocalDateTime.now());
+                waitingOutboxRepository.update(outbox);
+            }
+        }
+    }
+
 }

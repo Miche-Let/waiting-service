@@ -1,17 +1,17 @@
 package com.michelet.waiting.infrastructure.redis;
 
+import com.michelet.waiting.application.port.ScoredToken;
 import com.michelet.waiting.application.port.WaitingActivationPort;
 import com.michelet.waiting.domain.exception.WaitingErrorCode;
 import com.michelet.waiting.domain.exception.WaitingException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -77,21 +77,30 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
         return count != null ? count : 0L;
     }
 
-    // 앞에서 N개 토큰 꺼내기 - 스케줄러에서 호출
+
+    // 앞에서 N개 socre 포함해서 토큰 꺼내기
     // ZPOPMIN -> score 낮은 순 N개 추출
     @Override
-    public List<String> popNextTokens(UUID restaurantId, int count) {
-        String key = buildKey(restaurantId);
-        if(count <= 0) return List.of();
-        Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet()
-                .popMin(key, count);
-
+    public List<ScoredToken> popNextTokensWithScore(UUID restaurantId, int count) {
+        if (count <= 0) return List.of();
+        Set<ZSetOperations.TypedTuple<String>> tuples =
+        redisTemplate.opsForZSet()
+                .popMin(buildKey(restaurantId), count);
         if (tuples == null || tuples.isEmpty()) return List.of();
-
         return tuples.stream()
-                .map(ZSetOperations.TypedTuple::getValue)
-                .filter(Objects::nonNull)
+                .filter(t -> t.getValue() != null && t.getScore() != null)
+                .map(t -> new ScoredToken(
+                        t.getValue(),
+                        t.getScore().longValue()
+                ))
                 .toList();
+    }
+
+    @Override
+    public void addWithScore(UUID restaurantId, String token, Long score) {
+        validateToken(token);
+        redisTemplate.opsForZSet()
+                .add(buildKey(restaurantId), token, score);
     }
 
     @Override

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: waiting-service  # ← 추가
+    name: waiting-service
 
   main:
     allow-bean-definition-overriding: true
