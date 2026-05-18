@@ -77,6 +77,8 @@ jobs:
             --arg EUREKA_HOST "${{ vars.EUREKA_HOST }}" \
             --arg EUREKA_PORT "${{ vars.EUREKA_PORT }}" \
             --arg JWT_SECRET "${{ secrets.JWT_SECRET }}" \
+            --arg HIKARI_MAXIMUM_POOL_SIZE "5" \
+            --arg HIKARI_MINIMUM_IDLE "1" \
             '
             .containerDefinitions |= map(
               if .name == $CN then
@@ -87,7 +89,9 @@ jobs:
                     {"name":"EUREKA_ENABLED","value":$EUREKA_ENABLED},
                     {"name":"EUREKA_HOST","value":$EUREKA_HOST},
                     {"name":"EUREKA_PORT","value":$EUREKA_PORT},
-                    {"name":"JWT_SECRET","value":$JWT_SECRET}
+                    {"name":"JWT_SECRET","value":$JWT_SECRET},
+                    {"name":"HIKARI_MAXIMUM_POOL_SIZE","value":$HIKARI_MAXIMUM_POOL_SIZE},
+                    {"name":"HIKARI_MINIMUM_IDLE","value":$HIKARI_MINIMUM_IDLE}
                   ]
               else .
               end
