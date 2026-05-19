@@ -39,6 +39,8 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
     // userKey create - "waiting:user:{restaurantId}:{userId}"
     // 유저별 식당 대기 등록 여부 관리
     private String buildUserKey(UUID restaurantId, UUID userId) {
+        Objects.requireNonNull(restaurantId, "restaurantId must not be null");
+        Objects.requireNonNull(userId, "userId must not be null");
         return USER_PREFIX + restaurantId + ":" + userId;
     }
 
