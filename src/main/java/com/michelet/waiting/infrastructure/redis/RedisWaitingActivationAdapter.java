@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class RedisWaitingActivationAdapter implements WaitingActivationPort {
 
     private final RedisTemplate<String,String> redisTemplate;
+    private static final String USER_PREFIX = "waiting:user:";
     private static final String PREFIX = "waiting:queue:";
     private static final String SEQ_PREFIX = "waiting:seq:";
 
@@ -34,6 +35,15 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
         Objects.requireNonNull(restaurantId, "restaurantId must not be null");
         return SEQ_PREFIX + restaurantId;
     }
+
+    // userKey create - "waiting:user:{restaurantId}:{userId}"
+    // 유저별 식당 대기 등록 여부 관리
+    private String buildUserKey(UUID restaurantId, UUID userId) {
+        Objects.requireNonNull(restaurantId, "restaurantId must not be null");
+        Objects.requireNonNull(userId, "userId must not be null");
+        return USER_PREFIX + restaurantId + ":" + userId;
+    }
+
 
     private void validateToken(String token){
         if(token == null || token.isBlank())
@@ -107,5 +117,22 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
     public void remove(UUID restaurantId, String token) {
         validateToken(token);
         redisTemplate.opsForZSet().remove(buildKey(restaurantId), token);
+    }
+
+    @Override
+    public boolean tryAddUser(UUID restaurantId, UUID userId) {
+        Objects.requireNonNull(restaurantId, "restaurantId must not be null");
+        Objects.requireNonNull(userId, "userId must not be null");
+        String key = buildUserKey(restaurantId, userId);
+        // SETNX — 키가 없을 때만 저장, 있으면 false 반환
+        Boolean result = redisTemplate.opsForValue().setIfAbsent(key, "1");
+        return Boolean.TRUE.equals(result);
+    }
+
+    // 유저 플래그 제거
+    // 취소/완료/만료/ACTIVE 전환 시 호출
+    @Override
+    public void removeUser(UUID restaurantId, UUID userId) {
+        redisTemplate.delete(buildUserKey(restaurantId, userId));
     }
 }

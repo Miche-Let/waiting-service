@@ -46,29 +46,36 @@ public class WaitingService {
             UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     // 대기 등록
-    public WaitingResult enterWaiting(EnterWaitingCommand command){
+    public WaitingResult enterWaiting(EnterWaitingCommand command) {
 
-        waitingRepository.findWaitingByRestaurantId(command.restaurantId())
-                .stream()
-                .filter(w -> w.getUserId().equals(command.userId()))
-                .findAny()
-                .ifPresent(w ->{throw new WaitingException(WaitingErrorCode.ALREADY_IN); });
+        // Redis SETNX로 원자적 중복 체크 + 플래그 저장
+        // false 반환 시 이미 대기 중인 유저
+        if (!waitingActivationPort.tryAddUser(command.restaurantId(), command.userId())) {
+            throw new WaitingException(WaitingErrorCode.ALREADY_IN);
+        }
 
-        Waiting waiting = Waiting.create(command.userId(), command.restaurantId());
+        try {
+            Waiting waiting = Waiting.create(command.userId(), command.restaurantId());
 
-        // DB 저장
-        Waiting saved = waitingRepository.save(waiting);
+            // DB 저장
+            Waiting saved = waitingRepository.save(waiting);
 
-        // redis 순번 등록
-        waitingActivationPort.add(command.restaurantId(), saved.getToken().value());
-        // redis 순번 조회
-        Long position = waitingActivationPort.getPosition(
-                command.restaurantId(), waiting.getToken().value()
-        );
+            // Redis 순번 등록
+            waitingActivationPort.add(command.restaurantId(), saved.getToken().value());
 
+            // Redis 순번 조회
+            Long position = waitingActivationPort.getPosition(
+                    command.restaurantId(), waiting.getToken().value()
+            );
 
-        return WaitingResult.of(saved, position);
+            return WaitingResult.of(saved, position);
 
+        } catch (Exception e) {
+            // DB 저장 실패 시 Redis 유저 플래그 제거
+            // 재등록 가능하도록
+            waitingActivationPort.removeUser(command.restaurantId(), command.userId());
+            throw e;
+        }
     }
 
     // 상태 조회
@@ -99,6 +106,8 @@ public class WaitingService {
         waitingRepository.save(waiting);
         waitingRepository.softDelete(waitingId, deletedBy);
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
+        // 취소 후 재등록 가능하도록 플래그 제거
+        waitingActivationPort.removeUser(waiting.getRestaurantId(), waiting.getUserId());
     }
 
     // ACTIVE 상태인지 검증 - 예약 서비스가 예약 전 호출
@@ -143,6 +152,9 @@ public class WaitingService {
         List<ScoredToken> scoredTokens = waitingActivationPort.popNextTokensWithScore(restaurantId,batchSize);
 
         for(ScoredToken scoredToken : scoredTokens){
+
+            boolean activeSaved = false;
+
             try{
                 Optional<Waiting> waitingOpt = waitingRepository.findByToken(scoredToken.token());
                 if (waitingOpt.isEmpty()) {
@@ -170,16 +182,23 @@ public class WaitingService {
                 waiting.activate();
                 waitingRepository.save(waiting);
 
+                activeSaved = true;
+
+                // ACTIVE 전환 후 예약 완료 시 재등록 가능하도록 플래그 제거
+                waitingActivationPort.removeUser(restaurantId, waiting.getUserId());
+
                 // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
                 outbox.markProcessed(LocalDateTime.now());
                 waitingOutboxRepository.update(outbox);
             }catch (Exception e){
                 // 4. DB 저장 실패 시 원래 score로 Redis 복구
-                waitingActivationPort.addWithScore(
-                        restaurantId,
-                        scoredToken.token(),
-                        scoredToken.score()
-                );
+                if (!activeSaved) {
+                    waitingActivationPort.addWithScore(
+                            restaurantId,
+                            scoredToken.token(),
+                            scoredToken.score()
+                    );
+                }
 
                 log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복구 - token : {}",
                         scoredToken.token(),e);
@@ -194,8 +213,16 @@ public class WaitingService {
         expired.forEach(waiting -> {
             waiting.expire();
             waitingRepository.save(waiting);
-            waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
+            waitingActivationPort.remove(
+                    waiting.getRestaurantId(),
+                    waiting.getToken().value());
+            waitingActivationPort.removeUser(
+                    waiting.getRestaurantId(),
+                    waiting.getUserId()
+            );
         });
+
+
     }
 
     public void retryPendingOutbox(){

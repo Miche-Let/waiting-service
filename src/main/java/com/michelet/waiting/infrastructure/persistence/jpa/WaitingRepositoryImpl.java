@@ -1,16 +1,14 @@
 package com.michelet.waiting.infrastructure.persistence.jpa;
 
 import com.michelet.waiting.domain.entity.Waiting;
-import com.michelet.waiting.domain.enums.WaitingStatus;
 import com.michelet.waiting.domain.repository.WaitingRepository;
 import com.michelet.waiting.infrastructure.persistence.querydsl.WaitingQueryRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
@@ -40,14 +38,6 @@ public class WaitingRepositoryImpl implements WaitingRepository {
     public Optional<Waiting> findByAccessToken(String accessToken) {
         return jpa.findByAccessTokenAndDeletedAtIsNull(accessToken)
                 .map(WaitingJpaEntity::toDomain);
-    }
-
-    @Override
-    public List<Waiting> findWaitingByRestaurantId(UUID restaurantId) {
-        return jpa.findByRestaurantIdAndStatusAndDeletedAtIsNull(restaurantId, WaitingStatus.WAITING)
-                .stream()
-                .map(WaitingJpaEntity::toDomain)
-                .toList();
     }
 
     @Override

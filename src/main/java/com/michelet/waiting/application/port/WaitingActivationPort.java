@@ -23,4 +23,10 @@ public interface WaitingActivationPort {
     // 대기열에서 제거 - 취소/만료 시 호출
     void remove(UUID restaurantId, String token);
 
+    boolean tryAddUser(UUID restaurantId, UUID userId);
+
+    // 유저 플래그 제거 ( 취소/완료/만료 시 )
+    void removeUser(UUID restaurantId, UUID userId);
+
+
 }
