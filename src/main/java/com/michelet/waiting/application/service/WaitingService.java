@@ -68,6 +68,12 @@ public class WaitingService {
                     command.restaurantId(), waiting.getToken().value()
             );
 
+            if (position == null) {
+                Waiting updated = waitingRepository.findById(saved.getId())
+                        .orElseThrow(() -> new WaitingException(WaitingErrorCode.NOT_FOUND));
+                return WaitingResult.of(updated);
+            }
+
             return WaitingResult.of(saved, position);
 
         } catch (Exception e) {
