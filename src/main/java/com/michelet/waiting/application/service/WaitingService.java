@@ -46,31 +46,36 @@ public class WaitingService {
             UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     // 대기 등록
-    public WaitingResult enterWaiting(EnterWaitingCommand command){
+    public WaitingResult enterWaiting(EnterWaitingCommand command) {
 
-        if (waitingActivationPort.existsUser(command.restaurantId(), command.userId())) {
+        // Redis SETNX로 원자적 중복 체크 + 플래그 저장
+        // false 반환 시 이미 대기 중인 유저
+        if (!waitingActivationPort.tryAddUser(command.restaurantId(), command.userId())) {
             throw new WaitingException(WaitingErrorCode.ALREADY_IN);
         }
 
-        Waiting waiting = Waiting.create(command.userId(), command.restaurantId());
+        try {
+            Waiting waiting = Waiting.create(command.userId(), command.restaurantId());
 
-        // DB 저장
-        Waiting saved = waitingRepository.save(waiting);
+            // DB 저장
+            Waiting saved = waitingRepository.save(waiting);
 
-        // redis 순번 등록
-        waitingActivationPort.add(command.restaurantId(), saved.getToken().value());
+            // Redis 순번 등록
+            waitingActivationPort.add(command.restaurantId(), saved.getToken().value());
 
-        // 이후 중복 등록 시도 시 Redis에서 바로 차단
-        waitingActivationPort.addUser(command.restaurantId(), command.userId());
+            // Redis 순번 조회
+            Long position = waitingActivationPort.getPosition(
+                    command.restaurantId(), waiting.getToken().value()
+            );
 
-        // redis 순번 조회
-        Long position = waitingActivationPort.getPosition(
-                command.restaurantId(), waiting.getToken().value()
-        );
+            return WaitingResult.of(saved, position);
 
-
-        return WaitingResult.of(saved, position);
-
+        } catch (Exception e) {
+            // DB 저장 실패 시 Redis 유저 플래그 제거
+            // 재등록 가능하도록
+            waitingActivationPort.removeUser(command.restaurantId(), command.userId());
+            throw e;
+        }
     }
 
     // 상태 조회

@@ -119,22 +119,15 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
         redisTemplate.opsForZSet().remove(buildKey(restaurantId), token);
     }
 
-    // 유저 중복 등록 여부 확인
-    // Redis key 존재 여부로 O(1) 체크
     @Override
-    public boolean existsUser(UUID restaurantId, UUID userId) {
-        return redisTemplate.hasKey(buildUserKey(restaurantId, userId));
+    public boolean tryAddUser(UUID restaurantId, UUID userId) {
+        Objects.requireNonNull(restaurantId, "restaurantId must not be null");
+        Objects.requireNonNull(userId, "userId must not be null");
+        String key = buildUserKey(restaurantId, userId);
+        // SETNX — 키가 없을 때만 저장, 있으면 false 반환
+        Boolean result = redisTemplate.opsForValue().setIfAbsent(key, "1");
+        return Boolean.TRUE.equals(result);
     }
-
-    // 유저 플래그 저장
-    // 대기 등록 성공 시 호출
-    @Override
-    public void addUser(UUID restaurantId, UUID userId) {
-        redisTemplate.opsForValue().set(
-                buildUserKey(restaurantId, userId), "1"
-        );
-    }
-
 
     // 유저 플래그 제거
     // 취소/완료/만료/ACTIVE 전환 시 호출
