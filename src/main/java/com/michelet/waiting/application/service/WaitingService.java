@@ -147,6 +147,9 @@ public class WaitingService {
         List<ScoredToken> scoredTokens = waitingActivationPort.popNextTokensWithScore(restaurantId,batchSize);
 
         for(ScoredToken scoredToken : scoredTokens){
+
+            boolean activeSaved = false;
+
             try{
                 Optional<Waiting> waitingOpt = waitingRepository.findByToken(scoredToken.token());
                 if (waitingOpt.isEmpty()) {
@@ -172,8 +175,10 @@ public class WaitingService {
 
                 // 2. DB ACTIVE 전환
                 waiting.activate();
-
                 waitingRepository.save(waiting);
+
+                activeSaved = true;
+
                 // ACTIVE 전환 후 예약 완료 시 재등록 가능하도록 플래그 제거
                 waitingActivationPort.removeUser(restaurantId, waiting.getUserId());
 
@@ -182,11 +187,13 @@ public class WaitingService {
                 waitingOutboxRepository.update(outbox);
             }catch (Exception e){
                 // 4. DB 저장 실패 시 원래 score로 Redis 복구
-                waitingActivationPort.addWithScore(
-                        restaurantId,
-                        scoredToken.token(),
-                        scoredToken.score()
-                );
+                if (!activeSaved) {
+                    waitingActivationPort.addWithScore(
+                            restaurantId,
+                            scoredToken.token(),
+                            scoredToken.score()
+                    );
+                }
 
                 log.warn("[스케줄러] ACTIVE 전환 실패 Redis 복구 - token : {}",
                         scoredToken.token(),e);
