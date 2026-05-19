@@ -144,6 +144,9 @@ public class WaitingService {
         waitingRepository.softDelete(waitingId, SYSTEM_UUID);
 
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
+
+        // 예약 완료 후 재등록 가능하도록 유저 플래그 제거
+        waitingActivationPort.removeUser(waiting.getRestaurantId(), waiting.getUserId());
     }
 
     // 스케줄러 - N명씩 입장 허용
@@ -189,9 +192,6 @@ public class WaitingService {
                 waitingRepository.save(waiting);
 
                 activeSaved = true;
-
-                // ACTIVE 전환 후 예약 완료 시 재등록 가능하도록 플래그 제거
-                waitingActivationPort.removeUser(restaurantId, waiting.getUserId());
 
                 // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
                 outbox.markProcessed(LocalDateTime.now());
