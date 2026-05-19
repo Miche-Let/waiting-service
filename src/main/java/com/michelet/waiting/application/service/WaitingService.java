@@ -48,11 +48,9 @@ public class WaitingService {
     // 대기 등록
     public WaitingResult enterWaiting(EnterWaitingCommand command){
 
-        waitingRepository.findWaitingByRestaurantId(command.restaurantId())
-                .stream()
-                .filter(w -> w.getUserId().equals(command.userId()))
-                .findAny()
-                .ifPresent(w ->{throw new WaitingException(WaitingErrorCode.ALREADY_IN); });
+        if (waitingActivationPort.existsUser(command.restaurantId(), command.userId())) {
+            throw new WaitingException(WaitingErrorCode.ALREADY_IN);
+        }
 
         Waiting waiting = Waiting.create(command.userId(), command.restaurantId());
 
@@ -61,6 +59,10 @@ public class WaitingService {
 
         // redis 순번 등록
         waitingActivationPort.add(command.restaurantId(), saved.getToken().value());
+
+        // 이후 중복 등록 시도 시 Redis에서 바로 차단
+        waitingActivationPort.addUser(command.restaurantId(), command.userId());
+
         // redis 순번 조회
         Long position = waitingActivationPort.getPosition(
                 command.restaurantId(), waiting.getToken().value()
@@ -99,6 +101,8 @@ public class WaitingService {
         waitingRepository.save(waiting);
         waitingRepository.softDelete(waitingId, deletedBy);
         waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
+        // 취소 후 재등록 가능하도록 플래그 제거
+        waitingActivationPort.removeUser(waiting.getRestaurantId(), waiting.getUserId());
     }
 
     // ACTIVE 상태인지 검증 - 예약 서비스가 예약 전 호출
@@ -168,7 +172,10 @@ public class WaitingService {
 
                 // 2. DB ACTIVE 전환
                 waiting.activate();
+
                 waitingRepository.save(waiting);
+                // ACTIVE 전환 후 예약 완료 시 재등록 가능하도록 플래그 제거
+                waitingActivationPort.removeUser(restaurantId, waiting.getUserId());
 
                 // 3. 동일한 Outbox 인스턴스 PROCESSED 로 update
                 outbox.markProcessed(LocalDateTime.now());
@@ -194,8 +201,16 @@ public class WaitingService {
         expired.forEach(waiting -> {
             waiting.expire();
             waitingRepository.save(waiting);
-            waitingActivationPort.remove(waiting.getRestaurantId(), waiting.getToken().value());
+            waitingActivationPort.remove(
+                    waiting.getRestaurantId(),
+                    waiting.getToken().value());
+            waitingActivationPort.removeUser(
+                    waiting.getRestaurantId(),
+                    waiting.getUserId()
+            );
         });
+
+
     }
 
     public void retryPendingOutbox(){

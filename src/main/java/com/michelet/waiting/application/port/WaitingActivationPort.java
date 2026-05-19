@@ -23,4 +23,14 @@ public interface WaitingActivationPort {
     // 대기열에서 제거 - 취소/만료 시 호출
     void remove(UUID restaurantId, String token);
 
+    // 유저 중복 등록 여부 확인 ( Redis )
+    boolean existsUser(UUID restaurantId, UUID userId);
+
+    // 유저 플래그 저장 ( 대기 등록 시 )
+    void addUser(UUID restaurantId, UUID userId);
+
+    // 유저 플래그 제거 ( 취소/완료/만료 시 )
+    void removeUser(UUID restaurantId, UUID userId);
+
+
 }

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class RedisWaitingActivationAdapter implements WaitingActivationPort {
 
     private final RedisTemplate<String,String> redisTemplate;
+    private static final String USER_PREFIX = "waiting:user:";
     private static final String PREFIX = "waiting:queue:";
     private static final String SEQ_PREFIX = "waiting:seq:";
 
@@ -34,6 +35,13 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
         Objects.requireNonNull(restaurantId, "restaurantId must not be null");
         return SEQ_PREFIX + restaurantId;
     }
+
+    // userKey create - "waiting:user:{restaurantId}:{userId}"
+    // 유저별 식당 대기 등록 여부 관리
+    private String buildUserKey(UUID restaurantId, UUID userId) {
+        return USER_PREFIX + restaurantId + ":" + userId;
+    }
+
 
     private void validateToken(String token){
         if(token == null || token.isBlank())
@@ -107,5 +115,29 @@ public class RedisWaitingActivationAdapter implements WaitingActivationPort {
     public void remove(UUID restaurantId, String token) {
         validateToken(token);
         redisTemplate.opsForZSet().remove(buildKey(restaurantId), token);
+    }
+
+    // 유저 중복 등록 여부 확인
+    // Redis key 존재 여부로 O(1) 체크
+    @Override
+    public boolean existsUser(UUID restaurantId, UUID userId) {
+        return redisTemplate.hasKey(buildUserKey(restaurantId, userId));
+    }
+
+    // 유저 플래그 저장
+    // 대기 등록 성공 시 호출
+    @Override
+    public void addUser(UUID restaurantId, UUID userId) {
+        redisTemplate.opsForValue().set(
+                buildUserKey(restaurantId, userId), "1"
+        );
+    }
+
+
+    // 유저 플래그 제거
+    // 취소/완료/만료/ACTIVE 전환 시 호출
+    @Override
+    public void removeUser(UUID restaurantId, UUID userId) {
+        redisTemplate.delete(buildUserKey(restaurantId, userId));
     }
 }
